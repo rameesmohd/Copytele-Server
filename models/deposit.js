@@ -13,7 +13,7 @@ const depositSchema = new Schema({
     },
     payment_mode : {
         type: String,
-        enum : ["usdt-trc20","usdt-bep20"],
+        enum : ["USDT-TRC20","USDT-BEP20"],
         required: true
     },
     crypto_txid : {
@@ -50,11 +50,6 @@ const depositSchema = new Schema({
     related_transaction: { 
       type: Schema.Types.ObjectId, 
       ref: 'investment_transactions' 
-    },
-    createdAt: { 
-      type: Date, 
-      default: Date.now, 
-      index: true 
     },
   },
   {

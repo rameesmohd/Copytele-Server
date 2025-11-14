@@ -84,7 +84,7 @@ const userSchema = new mongoose.Schema({
     ]
   },
 
-  token : String
+  currToken : String
 }, { timestamps: true });
 
 /* PERFORMANCE INDEXES */

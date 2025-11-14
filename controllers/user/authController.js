@@ -19,15 +19,16 @@ const teleUser = async (req, res) => {
       });
     }
 
-    // 🔍 Find existing Telegram user
+    // Check existing user
     let user = await userModel.findOne({ user_id: id });
-
-    // Create token
-    const token = createToken(id);
-
-    /* ------------------- EXISTING USER ------------------- */
+    console.log(user);
+    
+    /* ------------------------------------------------------
+       EXISTING USER 
+    ------------------------------------------------------ */
     if (user) {
-      user.token = token;
+      const token = createToken(user._id);
+      user.currToken = token;
       await user.save();
 
       return res
@@ -48,8 +49,12 @@ const teleUser = async (req, res) => {
         });
     }
 
-    /* ------------------- NEW USER CREATION ------------------- */
-    const newUser = new userModel({
+    /* ------------------------------------------------------
+       NEW USER 
+    ------------------------------------------------------ */
+
+    // Generate token first
+    const tempUser = new userModel({
       login_type: "telegram",
       telegram: {
         id,
@@ -60,10 +65,12 @@ const teleUser = async (req, res) => {
         is_premium,
       },
       user_id: id,
-      token,
     });
 
-    await newUser.save();
+    const token = createToken(tempUser._id);
+    tempUser.currToken = token;
+
+    const newUser = await tempUser.save();
 
     return res
       .cookie("userToken", token, {
