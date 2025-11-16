@@ -9,7 +9,7 @@ const  verifyUser = async(req, res, next) => {
     if (!token) return res.status(401).json({ message: "Unauthorized" });
 
     const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await userModel.findById({_id :decoded.userId});
+    const user = await userModel.findById({_id :decoded.userId},{is_blocked: false});
     
     if (!user || user.currToken !== token) {
       return res.status(401).json({ message: "Session expired or invalid" });

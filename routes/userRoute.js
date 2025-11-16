@@ -1,18 +1,33 @@
 const express = require('express')
 const router = express.Router();
 const { verifyUser } = require('../middlewares/userAuth')
-const user = require('../controllers/user/authController');
-const payment = require('../controllers/user/paymentController');
+const auth = require('../controllers/userTele/authController');
+const user = require('../controllers/userTele/userController');
+const payment = require('../controllers/userTele/paymentController');
 
 router.route('/user')
-      .post(user.teleUser)
+      .post(auth.teleUser)
 
 router.use(verifyUser)
 
 router.route('/deposit/usdt-trc20')
       .get(payment.trc20CreateDeposit) 
+      .post(payment.trc20CheckAndTransferPayment)
 
 router.route('/deposit/usdt-bep20')
       .get(payment.bep20CreateDeposit) 
+      .post(payment.bep20CheckAndTransferPayment)
+
+router.route('/withdraw/crypto')
+      .post(payment.withdrawFromMainWallet)
+
+router.route('/wallet')
+      .get(user.fetchUserWallet)
+
+router.route('/transactions')
+      .get(user.fetchUserWalletTransactions)
+
+router.route('/manager')
+      .get(user.fetchManager)
 
 module.exports=router
