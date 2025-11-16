@@ -51,6 +51,7 @@ const fetchUserWallet = async (req, res) => {
     return res.status(200).json({
       status: "success",
       result: {
+        user,
         totalWithdrawn,
         totalDeposited,
         netGain: user.wallets.main - (totalDeposited - totalWithdrawn) || 0,
