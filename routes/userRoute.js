@@ -4,6 +4,7 @@ const { verifyUser } = require('../middlewares/userAuth')
 const auth = require('../controllers/userTele/authController');
 const user = require('../controllers/userTele/userController');
 const payment = require('../controllers/userTele/paymentController');
+const investment = require('../controllers/userTele/invController')
 
 router.route('/user')
       .post(auth.teleUser)
@@ -29,5 +30,11 @@ router.route('/transactions')
 
 router.route('/manager')
       .get(user.fetchManager)
+
+router.route('/invest')
+      .post(investment.makeInvestment)
+
+router.route('/porfolio')
+      .get(investment.fetchInvestment)
 
 module.exports=router

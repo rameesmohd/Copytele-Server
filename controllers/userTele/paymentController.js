@@ -363,7 +363,7 @@ const bep20CheckAndTransferPayment = async (req,res) => {
         const balance = await getUSDTBEPBalance(pendingPayment.payment_address)
         console.log('balance :',balance);
 
-        if (balance <= 10) {
+        if (balance >= 10) {
             //-------------------------DB_Operations---------------------------//
             const proccessingPayment = await depositsModel.findOneAndUpdate(
                 { _id : deposit_id},
