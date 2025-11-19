@@ -9,6 +9,7 @@ const helmet = require('helmet');
 const cookieParser = require("cookie-parser");
 const userRoute = require('./routes/userRoute.js')
 const masterRoute = require('./routes/masterRoute.js')
+const managerRoute = require('./routes/managerRoute.js')
 
 dotenv.config();
 connectDB()
@@ -71,6 +72,8 @@ const limiter = rateLimit({
 app.use('/api', limiter);
 
 app.use('/api/master',masterRoute);
+app.use('/api/manager',managerRoute);
+
 app.use('/api',userRoute);
 
 
