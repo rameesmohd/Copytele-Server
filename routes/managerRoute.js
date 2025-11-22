@@ -1,5 +1,5 @@
 const express = require('express');
-const { getManagerData, fetchMyInvesters, login } = require('../controllers/manager/managerController');
+const { getManagerData, fetchMyInvesters, login, managerLogout } = require('../controllers/manager/managerController');
 const { addTradeToManager , getTrades } = require('../controllers/tradeController');
 const { intervalInvestmentHandle } = require('../controllers/intervalController')
 const { fetchInvestmentTransactions, fetchInvestmentTrades, fetchAllInvestmentTransactions }=require('../controllers/manager/invController');
@@ -30,6 +30,9 @@ router.get('/user',fetchUser)
 
 router.route('/deposits')
         .get(fetchAllInvestmentTransactions)
+
+router.get('/logout',managerLogout)
+
 
 module.exports= router
 

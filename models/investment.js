@@ -74,5 +74,11 @@ const investmentSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// 🔥 Indexes for performance
+investmentSchema.index({ manager: 1 });
+investmentSchema.index({ user: 1 });
+investmentSchema.index({ referred_by: 1 });
+investmentSchema.index({ createdAt: -1 });
+
 const investmentModel = mongoose.model("investments", investmentSchema);
 module.exports = investmentModel;

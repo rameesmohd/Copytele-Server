@@ -1,455 +1,486 @@
+// const managerModel = require('../models/manager');
+// const investmentModel = require('../models/investment');
+// const investmentTransactionModel = require('../models/investmentTx');
+// const userModel = require('../models/user')
+// const rebateTransactionModel = require('../models/rebateTx');
+// const { default: mongoose } = require('mongoose');
+// const intervalModel = require('../models/interval');
+
+
+// const intervalHandle = async () => {
+//   const session = await mongoose.startSession();
+//   session.startTransaction();
+
+//   try {
+//     console.log("Fetching weekly managers...");
+//     const managers = await managerModel
+//       .find({ trading_interval: "weekly" })
+//       .session(session);
+
+//     const managerIds = managers.map((m) => m._id);
+//     console.log(`Managers found: ${managers.length}`);
+
+//     const investments = await investmentModel
+//       .find({ manager: { $in: managerIds } })
+//       .session(session);
+
+//     console.log(`Investments found: ${investments.length}`);
+
+//     const processed = new Set();
+
+//     const investmentUpdates = [];
+//     const managerUpdates = [];
+//     const inviterUpdates = [];
+//     const feeTransactions = [];
+//     const rebateTransactions = [];
+
+//     for (const inv of investments) {
+//       if (processed.has(inv._id.toString())) continue;
+//       processed.add(inv._id.toString());
+
+//       const profit = toTwoDecimals(inv.current_interval_profit_equity);
+//       const perfFee = toTwoDecimals(inv.performance_fee_projected);
+
+//       if (profit === 0 && perfFee === 0) {
+//         console.log(`Skipping investment ${inv._id} (no profit or fee).`);
+//         continue;
+//       }
+
+//       // ---------------------------------------
+//       // NET PROFIT (after removing performance fee)
+//       // ---------------------------------------
+//       const netProfit = toTwoDecimals(profit - perfFee);
+
+//       // ---------------------------------------
+//       // HANDLE INVITER REBATE (if referred_by exists)
+//       // ---------------------------------------
+//       let inviterShare = 0;
+//       let adjustedPerfFee = perfFee;
+
+//       if (inv.referred_by) {
+//         const inviter = await userModel
+//           .findById(inv.referred_by)
+//           .session(session);
+
+//         if (inviter) {
+//           inviterShare = toTwoDecimals(perfFee / 3); // 33% rebate
+//           adjustedPerfFee = toTwoDecimals(perfFee - inviterShare);
+
+//           inviterUpdates.push({
+//             updateOne: {
+//               filter: { _id: inviter._id },
+//               update: {
+//                 $inc: {
+//                   "wallets.rebate": inviterShare,
+//                   "referral.total_earned_commission": inviterShare,
+//                   "referral.investments.$[elem].rebate_recieved": inviterShare,
+//                 },
+//               },
+//               arrayFilters: [{ "elem.investment_id": inv._id }],
+//             },
+//           });
+
+//           rebateTransactions.push({
+//             user: inviter._id,
+//             investment: inv._id,
+//             type: "commission",
+//             status: "approved",
+//             amount: inviterShare,
+//             description: `Weekly rebate distributed`,
+//           });
+//         }
+//       }
+
+//       // ---------------------------------------
+//       // UPDATE INVESTMENT
+//       // ---------------------------------------
+//       investmentUpdates.push({
+//         updateOne: {
+//           filter: { _id: inv._id },
+//           update: {
+//             $inc: {
+//               total_equity: netProfit,
+//               net_profit: netProfit,
+//               performance_fee_paid: perfFee,
+//             },
+//             $set: {
+//               performance_fee_projected: 0,
+//               current_interval_profit_equity: 0,
+//               current_interval_profit: 0,
+//             },
+//           },
+//         },
+//       });
+
+//       // ---------------------------------------
+//       // UPDATE MANAGER (collect adjusted performance fee)
+//       // ---------------------------------------
+//       managerUpdates.push({
+//         updateOne: {
+//           filter: { _id: inv.manager },
+//           update: {
+//             $inc: { total_performance_fee_collected: adjustedPerfFee },
+//           },
+//         },
+//       });
+
+//       // ---------------------------------------
+//       // CREATE MANAGER FEE TRANSACTION
+//       // ---------------------------------------
+//       feeTransactions.push({
+//         user: inv.user,
+//         investment: inv._id,
+//         type: "manager_fee",
+//         status: "success",
+//         amount: perfFee,
+//         comment: `Performance fee deducted (${perfFee})`,
+//       });
+
+//       console.log(
+//         `Processed investment ${inv._id} | Net Profit: ${netProfit} | Perf Fee: ${perfFee}`
+//       );
+//     }
+
+//     // ---------------------------------------
+//     // EXECUTE ALL BULK OPERATIONS IN PARALLEL
+//     // ---------------------------------------
+//     const bulkOps = [];
+
+//     if (investmentUpdates.length)
+//       bulkOps.push(investmentModel.bulkWrite(investmentUpdates, { session }));
+
+//     if (managerUpdates.length)
+//       bulkOps.push(managerModel.bulkWrite(managerUpdates, { session }));
+
+//     if (inviterUpdates.length)
+//       bulkOps.push(userModel.bulkWrite(inviterUpdates, { session }));
+
+//     if (feeTransactions.length)
+//       bulkOps.push(
+//         investmentTransactionModel.insertMany(feeTransactions, { session })
+//       );
+
+//     if (rebateTransactions.length)
+//       bulkOps.push(
+//         rebateTransactionModel.insertMany(rebateTransactions, { session })
+//       );
+
+//     await Promise.all(bulkOps);
+
+//     await session.commitTransaction();
+//     session.endSession();
+
+//     console.log("✔ Weekly interval settlement completed.");
+//   } catch (error) {
+//     await session.abortTransaction();
+//     session.endSession();
+//     console.error("❌ Interval handling failed:", error);
+//   }
+// };
+
+// const handleInterval = async () => {
+//   // Complete last pending interval
+//   const existing = await intervalModel
+//     .findOne({ status: "pending" })
+//     .sort({ createdAt: -1 });
+
+//   if (existing) {
+//     existing.status = "completed";
+//     await existing.save();
+//   }
+
+//   // Week start (Sunday) & end (Saturday)
+//   const today = new Date();
+//   const dow = today.getUTCDay();
+
+//   const start = new Date(today);
+//   start.setUTCDate(today.getUTCDate() - dow);
+//   start.setUTCHours(0, 0, 0, 0);
+
+//   const end = new Date(start);
+//   end.setUTCDate(start.getUTCDate() + 6);
+//   end.setUTCHours(23, 59, 59, 999);
+
+//   const label = `${start.toLocaleDateString("en-US", {
+//     month: "short",
+//     day: "numeric",
+//   })}–${end.toLocaleDateString("en-US", {
+//     day: "numeric",
+//   })} ${start.getUTCFullYear()}`;
+
+//   const interval = new intervalModel({
+//     period: "weekly",
+//     status: "pending",
+//     current_interval_start: start,
+//     current_interval_end: end,
+//     current_intervel: label,
+//   });
+
+//   await interval.save();
+//   await intervalHandle();
+// };
+
+
+
+// //---------------Test api Function---------
+// const intervalInvestmentHandle=async(req,res)=>{
+//     try {
+//         await handleInterval()
+//         res.status(200).json({ msg: 'Interval investment handling completed successfully' });
+//     } catch (error) {
+//         console.log(error);
+//         res.status(500).json({ errMsg: 'Server side error', error: error.message });
+//     }
+// }
+
+// module.exports = {
+//     intervalInvestmentHandle,
+//     handleInterval
+// };
+
+
 const managerModel = require('../models/manager');
 const investmentModel = require('../models/investment');
 const investmentTransactionModel = require('../models/investmentTx');
-const userModel = require('../models/user')
+const userModel = require('../models/user');
 const rebateTransactionModel = require('../models/rebateTx');
-const { default: mongoose } = require('mongoose');
 const intervalModel = require('../models/interval');
+const { default: mongoose } = require('mongoose');
+const { toTwoDecimals } = require('../utils/decimal');
 
-// const intervalInvestmentHandle = async (req, res) => {
-//     try {
-//         // Fetch all managers
-//         const managers = await managerModel.find({trading_interval:'weekly'});
 
-//         // Process each manager
-//         for (const manager of managers) {
-//             // Fetch all investments for the manager
-//             const investments = await investmentModel.find({ manager: manager._id });
-
-//             for (const investment of investments) {
-//                 // Calculate the amount to be added to total funds
-//                 const netIntervalProfit = investment.current_interval_profit_equity - investment.performance_fee_projected;
-
-//                 // Update investment's total funds and net profit
-//                 investment.total_funds += netIntervalProfit;
-//                 investment.net_profit += netIntervalProfit;
-
-//                 // Update manager's performance fee and investment's fee tracking
-//                 let adjustedPerformanceFee =investment.performance_fee_projected
-
-//                 if (investment.inviter) {
-//                     const inviter = await userModel.findOne({ user_id: investment.inviter });
-//                     if (inviter && investment.performance_fee_projected > 0) {
-//                         // Calculate inviter's share (5% of total profit)
-//                         const inviterShare = investment.current_interval_profit_equity * 0.05;
-                
-//                         // Update inviter's wallets and commission tracking
-//                         inviter.my_wallets.rebate_wallet += inviterShare;
-//                         inviter.referral.total_earned_commission += inviterShare;
-//                         await inviter.save();
-
-//                         const rebateTransaction = new rebateTransactionModel({
-//                             user : inviter._id,
-//                             investment : investment._id,
-//                             type : 'commission',
-//                             status : 'approved',
-//                             amount : inviterShare , 
-//                             description : `Weekly commission distribution.`,
-//                         })
-//                         await rebateTransaction.save()
-                        
-//                         // Adjust the performance fee by deducting the inviter's share
-//                         adjustedPerformanceFee = Math.max(0, investment.performance_fee_projected - inviterShare);
-//                     }
-//                 }
-                
-//                 manager.total_performance_fee_collected += adjustedPerformanceFee;
-//                 investment.performance_fee_paid += investment.performance_fee_projected;
-
-//                 // Reset performance fee projections and profits
-//                 investment.performance_fee_projected = 0;
-//                 investment.current_interval_profit_equity = 0;
-//                 investment.current_interval_profit = 0;
-
-//                 // Create a performance fee deduction transaction
-//                 const feeTransaction = new investmentTransactionModel({
-//                     user: investment.user,
-//                     investment: investment._id,
-//                     type: 'manager_fee',
-//                     status: 'success',
-//                     amount: investment.performance_fee_paid, // Use correct value
-//                     comment: `Performance fee of ${investment.performance_fee_paid} deducted`,
-//                 });
-
-//                 // Save investment and fee transaction
-//                 await investment.save();
-//                 await feeTransaction.save();
-
-//                 console.log(`Handled current interval profit of ${netIntervalProfit} for investment ${investment._id}`);
-//             }
-
-//             // Save the manager with updated performance fee
-//             await manager.save();
-//         }
-
-//         res.status(200).json({ message: 'Interval investment handling completed successfully' });
-//     } catch (error) {
-//         console.error('Error in interval investment handling:', error);
-//         res.status(500).json({ errMsg: 'Server side error', error: error.message });
-//     }
-// };
-  
-
-// const intervalInvestmentHandle = async (req, res) => {
-//     const session = await mongoose.startSession();
-//     session.startTransaction();
-
-//     try {
-//         // Fetch all managers with trading interval "weekly"
-//         const managers = await managerModel.find({ trading_interval: 'weekly' }).session(session);
-
-//         // Fetch all investments in bulk
-//         const managerIds = managers.map(m => m._id);
-//         const investments = await investmentModel.find({ manager: { $in: managerIds } }).session(session);
-
-//         // Prepare bulk update operations
-//         const investmentUpdates = [];
-//         const managerUpdates = [];
-//         const feeTransactions = [];
-//         const rebateTransactions = [];
-//         const inviterUpdates = [];
-
-//         // Process investments
-//         for (const investment of investments) {
-//             const netIntervalProfit = investment.current_interval_profit_equity - investment.performance_fee_projected;
-//             let adjustedPerformanceFee = investment.performance_fee_projected;
-//             let inviterShare = 0;
-
-//             // If inviter exists, calculate and store updates
-//             if (investment.referred_by) {
-//                 const inviter = await userModel.findOne({ user_id: investment.referred_by }).session(session);
-//                 if (inviter && investment.performance_fee_projected > 0) {
-//                     inviterShare = investment.current_interval_profit_equity * 0.05;
-//                     adjustedPerformanceFee -= inviterShare;
-
-//                     // Store inviter updates
-//                     inviterUpdates.push({
-//                         updateOne: {
-//                             filter: { _id: inviter._id },
-//                             update: {
-//                                 $inc: {
-//                                     "my_wallets.rebate_wallet": inviterShare,
-//                                     "referral.total_earned_commission": inviterShare
-//                                 }
-//                             }
-//                         }
-//                     });
-
-//                     // Store rebate transaction
-//                     rebateTransactions.push({
-//                         user: inviter._id,
-//                         investment: investment._id,
-//                         type: 'commission',
-//                         status: 'approved',
-//                         amount: inviterShare,
-//                         description: `Weekly commission distribution.`,
-//                     });
-//                 }
-//             }
-
-//             // Ensure performance fee is properly tracked
-//             const performanceFeePaid = investment.performance_fee_projected;
-
-//             // Prepare investment updates
-//             investmentUpdates.push({
-//                 updateOne: {
-//                     filter: { _id: investment._id },
-//                     update: {
-//                         $inc: {
-//                             total_funds: netIntervalProfit,
-//                             net_profit: netIntervalProfit,
-//                             performance_fee_paid: performanceFeePaid, // Ensure correct tracking
-//                         },
-//                         $set: {
-//                             performance_fee_projected: 0,
-//                             current_interval_profit_equity: 0,
-//                             current_interval_profit: 0
-//                         }
-//                     }
-//                 }
-//             });
-
-//             // Prepare manager updates
-//             managerUpdates.push({
-//                 updateOne: {
-//                     filter: { _id: investment.manager },
-//                     update: { $inc: { total_performance_fee_collected: adjustedPerformanceFee } }
-//                 }
-//             });
-
-//             // Prepare performance fee transaction **before resetting performance_fee_projected**
-//             feeTransactions.push({
-//                 user: investment.user,
-//                 investment: investment._id,
-//                 type: 'manager_fee',
-//                 status: 'success',
-//                 amount: performanceFeePaid, // Ensure this reflects the actual deducted amount
-//                 comment: `Performance fee of ${performanceFeePaid} deducted`,
-//             });
-//         }
-
-//         // Execute bulk operations
-//         if (investmentUpdates.length) await investmentModel.bulkWrite(investmentUpdates, { session });
-//         if (managerUpdates.length) await managerModel.bulkWrite(managerUpdates, { session });
-//         if (inviterUpdates.length) await userModel.bulkWrite(inviterUpdates, { session });
-//         if (rebateTransactions.length) await rebateTransactionModel.insertMany(rebateTransactions, { session });
-//         if (feeTransactions.length) await investmentTransactionModel.insertMany(feeTransactions, { session });
-
-//         // Commit transaction
-//         await session.commitTransaction();
-//         session.endSession();
-
-//         res.status(200).json({ message: 'Interval investment handling completed successfully' });
-//     } catch (error) {
-//         await session.abortTransaction();
-//         session.endSession();
-//         console.error('Error in interval investment handling:', error);
-//         res.status(500).json({ errMsg: 'Server side error', error: error.message });
-//     }
-// };
-
-const truncateToTwoDecimals = (num) => {
-    return Math.floor(num * 100) / 100;
-  };
-  
-
+/* ============================================================================
+   WEEKLY SETTLEMENT LOGIC
+============================================================================ */
 const intervalHandle = async () => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-    try {
-        console.log("Fetching managers with weekly trading interval...");
-        const managers = await managerModel.find({ trading_interval: 'weekly' }).session(session);
+  try {
+    console.log("Fetching weekly managers...");
+    const managers = await managerModel
+      .find({ trading_interval: "weekly" })
+      .session(session);
 
-        const managerIds = managers.map(m => m._id);
-        console.log(`Found ${managers.length} managers.`);
+    const managerIds = managers.map((m) => m._id);
 
-        console.log("Fetching investments...");
-        const investments = await investmentModel.find({ manager: { $in: managerIds } }).session(session);
-        console.log(`Found ${investments.length} investments.`);
+    const investments = await investmentModel
+      .find({ manager: { $in: managerIds } })
+      .session(session);
 
-        const investmentUpdates = [];
-        const managerUpdates = [];
-        const feeTransactions = [];
-        const rebateTransactions = [];
-        const inviterUpdates = [];
+    const processed = new Set();
 
-        const processedInvestments = new Set(); // Track processed investment IDs
+    const investmentUpdates = [];
+    const managerUpdates = [];
+    const inviterUpdates = [];
+    const feeTransactions = [];
+    const rebateTransactions = [];
 
-        for (const investment of investments) {
+    let processedCount = 0;
 
-        // ✅ Skip iteration if there's no profit or performance fee
-        if (investment.current_interval_profit_equity === 0 && investment.performance_fee_projected === 0) {
-            console.log(`Skipping investment ${investment._id} - No profit or fee to process.`);
-            continue;
+    for (const inv of investments) {
+      if (processed.has(inv._id.toString())) continue;
+      processed.add(inv._id.toString());
+
+      const profit = toTwoDecimals(inv.current_interval_profit_equity);
+      const perfFee = toTwoDecimals(inv.performance_fee_projected);
+
+      if (profit === 0 && perfFee === 0) continue;
+
+      processedCount++;
+
+      const netProfit = toTwoDecimals(profit - perfFee);
+
+      // --------------------- INVITER REBATE ---------------------
+      let inviterShare = 0;
+      let adjustedPerfFee = perfFee;
+
+      if (inv.referred_by) {
+        const inviter = await userModel
+          .findById(inv.referred_by)
+          .session(session);
+
+        if (inviter) {
+          inviterShare = toTwoDecimals(perfFee / 3);
+          adjustedPerfFee = toTwoDecimals(perfFee - inviterShare);
+
+          inviterUpdates.push({
+            updateOne: {
+              filter: { _id: inviter._id },
+              update: {
+                $inc: {
+                  "wallets.rebate": inviterShare,
+                  "referral.total_earned_commission": inviterShare,
+                  "referral.investments.$[elem].rebate_recieved": inviterShare,
+                },
+              },
+              arrayFilters: [{ "elem.investment_id": inv._id }],
+            },
+          });
+
+          rebateTransactions.push({
+            user: inviter._id,
+            investment: inv._id,
+            type: "commission",
+            status: "approved",
+            amount: inviterShare,
+            description: `Weekly rebate distributed`,
+          });
         }
+      }
 
-        // ✅ Prevent duplicate processing
-        if (processedInvestments.has(investment._id.toString())) {
-            console.warn(`Skipping duplicate processing for investment: ${investment._id}`);
-            continue;
-        }
+      // --------------------- UPDATE INVESTMENT ---------------------
+      investmentUpdates.push({
+        updateOne: {
+          filter: { _id: inv._id },
+          update: {
+            $inc: {
+              total_equity: netProfit,
+              net_profit: netProfit,
+              performance_fee_paid: perfFee,
+            },
+            $set: {
+              performance_fee_projected: 0,
+              current_interval_profit_equity: 0,
+              current_interval_profit: 0,
+            },
+          },
+        },
+      });
 
-        processedInvestments.add(investment._id.toString());                                    
+      // --------------------- UPDATE MANAGER ---------------------
+      managerUpdates.push({
+        updateOne: {
+          filter: { _id: inv.manager },
+          update: {
+            $inc: { total_performance_fee_collected: adjustedPerfFee },
+          },
+        },
+      });
 
-        const netIntervalProfit = truncateToTwoDecimals(investment.current_interval_profit_equity - investment.performance_fee_projected);
-        let adjustedPerformanceFee = truncateToTwoDecimals(investment.performance_fee_projected);
-        let inviterShare = 0;
-
-        if (investment.referred_by) {
-                const inviter = await userModel.findOne({ _id: investment.referred_by }).session(session);
-                if (inviter && investment.performance_fee_projected > 0) {
-                    inviterShare = truncateToTwoDecimals(investment.performance_fee_projected / 3);
-                    adjustedPerformanceFee = truncateToTwoDecimals(adjustedPerformanceFee - inviterShare);
-            
-                    inviterUpdates.push({
-                        updateOne: {
-                            filter: { _id: inviter._id },
-                            update: {
-                                $inc: {
-                                    "my_wallets.rebate_wallet": inviterShare,
-                                    "referral.total_earned_commission": inviterShare,
-                                    "referral.investments.$[elem].rebate_recieved": inviterShare
-                                }
-                            },
-                            arrayFilters: [{ "elem.investment_id": investment._id }]
-                        }
-                    });
-            
-                    rebateTransactions.push({
-                        user: inviter._id,
-                        investment: investment._id,
-                        type: 'commission',
-                        status: 'approved',
-                        amount: inviterShare,
-                        description: `Weekly commission distribution.#MANAGER:${adjustedPerformanceFee} #REBATE:${inviterShare}`,
-                    });
-            
-                    console.log(`Inviter ${inviter._id} updated with rebate: ${inviterShare}`);
-                }
-            }
-            
-            const performanceFeePaid = truncateToTwoDecimals(investment.performance_fee_projected);
-
-            investmentUpdates.push({
-                updateOne: {
-                    filter: { _id: investment._id },
-                    update: {
-                        $inc: {
-                            total_funds: netIntervalProfit,
-                            net_profit: netIntervalProfit,
-                            performance_fee_paid: performanceFeePaid,
-                        },
-                        $set: {
-                            performance_fee_projected: 0,
-                            current_interval_profit_equity: 0,
-                            current_interval_profit: 0
-                        }
-                    }
-                }
-            });
-
-            managerUpdates.push({
-                updateOne: {
-                    filter: { _id: investment.manager },
-                    update: { $inc: { total_performance_fee_collected: adjustedPerformanceFee } }
-                }
-            });
-            
-            feeTransactions.push({
-                user: investment.user,
-                investment: investment._id,
-                type: 'manager_fee',
-                status: 'success',
-                amount: performanceFeePaid,
-                comment: `Performance fee is deducted.`,
-            });
-
-            console.log(`Investment ${investment._id} updated: net profit = ${netIntervalProfit}, performance fee = ${performanceFeePaid}`);
-        }
-
-        console.log("Executing bulk operations...");
-
-        const bulkOperations = [];
-
-        if (investmentUpdates.length) {
-            bulkOperations.push(investmentModel.bulkWrite(investmentUpdates, { session }).then(res => console.log(`Investment updates applied: ${res.modifiedCount}`)));
-        }
-
-        if (managerUpdates.length) {
-            bulkOperations.push(managerModel.bulkWrite(managerUpdates, { session }).then(res => console.log(`Manager updates applied: ${res.modifiedCount}`)));
-        }
-
-        if (inviterUpdates.length) {
-            bulkOperations.push(userModel.bulkWrite(inviterUpdates, { session }).then(res => console.log(`Inviter updates applied: ${res.modifiedCount}`)));
-        }
-
-        if (rebateTransactions.length) {
-            bulkOperations.push(rebateTransactionModel.insertMany(rebateTransactions, { session }).then(res => console.log(`Rebate transactions inserted: ${res.length}`)));
-        }
-
-        if (feeTransactions.length) {
-            bulkOperations.push(investmentTransactionModel.insertMany(feeTransactions, { session }).then(res => console.log(`Fee transactions inserted: ${res.length}`)));
-        }
-
-        await Promise.all(bulkOperations);
-
-        await session.commitTransaction();
-        session.endSession();
-        console.log("Interval investment handling completed successfully.");
-    } catch (error) {
-        await session.abortTransaction();
-        session.endSession();
-        console.error('Error in interval investment handling:', error);
+      // --------------------- FEE TRANSACTION ---------------------
+      feeTransactions.push({
+        user: inv.user,
+        investment: inv._id,
+        type: "manager_fee",
+        status: "success",
+        amount: perfFee,
+        comment: `Performance fee deducted (${perfFee})`,
+      });
     }
+
+    // --------------------- BULK EXECUTION ---------------------
+    const jobs = [];
+
+    if (investmentUpdates.length)
+      jobs.push(investmentModel.bulkWrite(investmentUpdates, { session }));
+
+    if (managerUpdates.length)
+      jobs.push(managerModel.bulkWrite(managerUpdates, { session }));
+
+    if (inviterUpdates.length)
+      jobs.push(userModel.bulkWrite(inviterUpdates, { session }));
+
+    if (feeTransactions.length)
+      jobs.push(investmentTransactionModel.insertMany(feeTransactions, { session }));
+
+    if (rebateTransactions.length)
+      jobs.push(rebateTransactionModel.insertMany(rebateTransactions, { session }));
+
+    await Promise.all(jobs);
+
+    // UPDATE last interval record with processed count
+    await intervalModel.findOneAndUpdate(
+      { status: "pending" },
+      { total_investments_processed: processedCount }
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    console.log("✔ Weekly interval settlement completed.");
+
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error("❌ Interval handling failed:", error);
+  }
 };
 
-const getCurrentWeekEndDate = () => {
-    const today = new Date();
-    const dayOfWeek = today.getUTCDay(); // Use UTC-based day of the week
 
-    // Get last Sunday (or today if it's Sunday)
-    const firstDayOfWeek = new Date(today);
-    firstDayOfWeek.setUTCDate(today.getUTCDate() - dayOfWeek);
-    firstDayOfWeek.setUTCHours(0, 0, 0, 0); // Ensure UTC time
-
-    // Get next Saturday at 23:59:59 UTC
-    const lastDayOfWeek = new Date(firstDayOfWeek);
-    lastDayOfWeek.setUTCDate(firstDayOfWeek.getUTCDate() + 6);
-    lastDayOfWeek.setUTCHours(23, 59, 59, 999); // Ensure UTC time
-
-    return { firstDayOfWeek, lastDayOfWeek };
-};
-
-
-const getCurrentWeekDates = () => {
-    const today = new Date();
-    const dayOfWeek = today.getDay();
-
-    // Calculate the date of the last Sunday (or today if it's Sunday)
-    const firstDayOfWeek = new Date(today);
-    firstDayOfWeek.setDate(today.getDate() - dayOfWeek); // Sunday
-
-    // Calculate the date of the next Saturday
-    const lastDayOfWeek = new Date(firstDayOfWeek);
-    lastDayOfWeek.setDate(firstDayOfWeek.getDate() + 6); // Saturday
-
-    // Format the start and end dates
-    const options = { month: 'short', day: 'numeric', year: 'numeric' };
-    const startDate = firstDayOfWeek.toLocaleDateString('en-US', options);
-    const endDate = lastDayOfWeek.toLocaleDateString('en-US', options);
-    
-    // Split the formatted strings
-    const startParts = startDate.split(' ');
-    const endParts = endDate.split(' ');
-
-    // Extracting month, day, and year to construct the final string
-    const startMonth = startParts[0];
-    const startDay = startParts[1];
-    const endDay = endParts[1];
-    const year = startParts[2];
-
-    // Construct the final string without extra commas
-    return `${startMonth} ${startDay}–${endDay} ${year}`.replace(/,\s*–/g, '–'); // Remove any comma before the dash
-};
-
+/* ============================================================================
+   CREATE NEW WEEKLY INTERVAL
+============================================================================ */
 const handleInterval = async () => {
-    const interval = await intervalModel.findOne({ status: "pending" }).sort({ createdAt: -1 });
+  // Close last pending interval
+  const existing = await intervalModel
+    .findOne({ status: "pending" })
+    .sort({ createdAt: -1 });
 
-    if (interval) {
-        interval.status = "completed";
-        await interval.save();
-    }
+  if (existing) {
+    existing.status = "completed";
+    await existing.save();
+  }
 
-    // Get correct week start and end dates
-    const { firstDayOfWeek, lastDayOfWeek } = getCurrentWeekEndDate();
+  // Compute weekly dates
+  const today = new Date();
+  const dow = today.getUTCDay(); // Sunday = 0
 
-    const newInterval = new intervalModel({
-        current_interval_start: firstDayOfWeek,
-        current_interval_end: lastDayOfWeek,
-        current_intervel: getCurrentWeekDates(),
-    });
+  const start = new Date(today);
+  start.setUTCDate(today.getUTCDate() - dow);
+  start.setUTCHours(0, 0, 0, 0);
 
-    await newInterval.save();
-    await intervalHandle();
+  const end = new Date(start);
+  end.setUTCDate(start.getUTCDate() + 6);
+  end.setUTCHours(23, 59, 59, 999);
+
+  // Compute weekly label
+  const label = `${start.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  })}–${end.toLocaleDateString("en-US", {
+    day: "numeric",
+  })} ${start.getUTCFullYear()}`;
+
+  // Compute interval_index
+  const yearStart = new Date(Date.UTC(today.getUTCFullYear(), 0, 1));
+  const weekNumber =
+    Math.ceil(((today - yearStart) / 86400000 + yearStart.getUTCDay() + 1) / 7);
+
+  const intervalIndex = `${today.getUTCFullYear()}-W${weekNumber
+    .toString()
+    .padStart(2, "0")}`;
+
+  // Save new interval
+  await intervalModel.create({
+    period: "weekly",
+    status: "pending",
+    current_interval_start: start,
+    current_interval_end: end,
+    current_intervel: label,
+    interval_index: intervalIndex,
+    total_investments_processed: 0,
+  });
+
+  // Run settlement
+  await intervalHandle();
 };
 
 
-
-//---------------Test api Function---------
-const intervalInvestmentHandle=async(req,res)=>{
-    try {
-        await handleInterval()
-        res.status(200).json({ msg: 'Interval investment handling completed successfully' });
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ errMsg: 'Server side error', error: error.message });
-    }
-}
+/* ============================================================================
+   API for testing
+============================================================================ */
+const intervalInvestmentHandle = async (req, res) => {
+  try {
+    await handleInterval();
+    res.status(200).json({ msg: "Interval investment handling completed successfully" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ errMsg: "Server error", error: error.message });
+  }
+};
 
 module.exports = {
-    intervalInvestmentHandle,
-    handleInterval
+  intervalInvestmentHandle,
+  handleInterval,
 };
-
-

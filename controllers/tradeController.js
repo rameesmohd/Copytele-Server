@@ -95,202 +95,232 @@ const getDailyGrowthData = async (managerId) => {
     }));
   };
 
-const truncateToTwoDecimals = (num) => {
-    return Number(num.toFixed(2));
-  };
-  
+// const truncateToTwoDecimals = (num) => {
+//     return Number(num.toFixed(2));
+//   };
+
 // const rollOverTradeDistribution = async (rollover_id) => {
 //   const session = await mongoose.startSession();
 //   session.startTransaction();
 
 //   try {
-//     // Fetch undistributed trades
 //     const unDistributedTrades = await managerTradeModel.find({ is_distributed: false }).session(session);
-
 //     if (unDistributedTrades.length === 0) {
-//         console.log("No undistributed trades found.");
-//         await session.commitTransaction();
-//         session.endSession();
-//         return true;
+//       console.log("No undistributed trades found.");
+//       await session.commitTransaction();
+//       session.endSession();
+//       return true;
 //     }
 
 //     const bulkInvestmentUpdates = [];
 //     const bulkInvestorTradeInserts = [];
 //     const bulkTradeUpdates = [];
 //     const bulkManagerUpdates = [];
+//     const bulkCompoundedChartInserts = [];
+
+//     const managerGrowthDataMap = new Map(); 
 
 //     for (const trade of unDistributedTrades) {
-//           const tradeProfit =   truncateToTwoDecimals(trade.manager_profit);
+//       const tradeProfit = truncateToTwoDecimals(trade.manager_profit);
+//       const manager = await managerModel.findById(trade.manager).session(session);
 
-//           const manager = await managerModel.findById(trade.manager).session(session);
-//           if (!manager) {
-//               console.warn(`Manager not found for trade ${trade._id}`);
-//               continue;
-//           }
+//       if (!manager) continue;
 
-//           // Update manager profits
-//           manager.closed_trade_profit += tradeProfit;
-//           manager.total_trade_profit += tradeProfit;
+//       const investments = await investmentModel.find({ manager: manager._id }).session(session);
+//       const totalFunds = investments.reduce((sum, inv) => sum + (inv.total_funds || 0), 0);
+//       if (totalFunds === 0) continue;
 
-//           const investments = await investmentModel.find({ manager: manager._id }).session(session);
-//           const totalFunds = investments.reduce((sum, inv) => sum + (inv.total_funds || 0), 0);
+//       for (const investment of investments) {
+//         if (investment.total_funds < 1) continue;
 
-//           if (totalFunds === 0) {
-//               console.warn(`Manager ${manager._id} has no funds to distribute.`);
-//               continue;
-//           }
+//         const investorProfit = truncateToTwoDecimals(
+//           (investment.total_funds / totalFunds) * tradeProfit
+//         );
+//         const performanceFee = truncateToTwoDecimals(
+//           (investorProfit * (investment.manager_performance_fee || 0)) / 100
+//         );
 
-//           for (const investment of investments) {
-
-//               if(investment.total_funds < 1){
-//                 console.warn(`Skipping investment due to no funds ${investment._id}`);
-//                 continue;
-//               }
-
-//             const investorProfit = truncateToTwoDecimals(
-//                 (investment.total_funds / totalFunds) * tradeProfit
-//             );
-//             const performanceFee = truncateToTwoDecimals(
-//                 (investorProfit * (investment.manager_performance_fee || 0)) / 100
-//             );
-
-//             //   if(investorProfit>0){                 
-//               // Update investment profits
-//               bulkInvestmentUpdates.push({
-//                   updateOne: {
-//                       filter: { _id: investment._id },
-//                       update: {
-//                           $inc: {
-//                               current_interval_profit: investorProfit,
-//                               current_interval_profit_equity: investorProfit,
-//                               total_trade_profit: investorProfit,
-//                               closed_trade_profit: investorProfit,
-//                               performance_fee_projected: performanceFee,
-//                           },
-//                       },
-//                   },
-//               });
-
-//               // Add investor trade history
-//               bulkInvestorTradeInserts.push({
-//                   investment: investment._id,
-//                   manager: manager._id,
-//                   manager_trade: trade._id,
-//                   type: trade.type,
-//                   symbol: trade.symbol,
-//                   manager_volume: trade.manager_volume,
-//                   open_price: trade.open_price,
-//                   close_price: trade.close_price,
-//                   swap: trade.swap,
-//                   open_time: new Date(trade.open_time).toISOString(),
-//                   close_time: new Date(trade.close_time).toISOString(),
-//                   manager_profit: trade.manager_profit,
-//                   investor_profit: investorProfit,
-//                   rollover_id: rollover_id,
-//                 });
-//             // }
-//         }
-
-//           // Mark the trade as distributed
-//           bulkTradeUpdates.push({
-//               updateOne: {
-//                   filter: { _id: trade._id },
-//                   update: { is_distributed: true },
+//         bulkInvestmentUpdates.push({
+//           updateOne: {
+//             filter: { _id: investment._id },
+//             update: {
+//               $inc: {
+//                 current_interval_profit: investorProfit,
+//                 current_interval_profit_equity: investorProfit,
+//                 total_trade_profit: investorProfit,
+//                 closed_trade_profit: investorProfit,
+//                 performance_fee_projected: performanceFee,
 //               },
-//           });
+//             },
+//           },
+//         });
 
-//         //   if (tradeProfit > 0) {
-//               // Queue manager update
-//               bulkManagerUpdates.push({
-//               updateOne: {
-//                   filter: { _id: manager._id },
-//                   update: {
-//                       $inc: {
-//                           closed_trade_profit: truncateToTwoDecimals(tradeProfit),
-//                           total_trade_profit: truncateToTwoDecimals(tradeProfit),
-//                         },
-//                     },
-//                 },
-//             });
-//         // }
+//         bulkInvestorTradeInserts.push({
+//           investment: investment._id,
+//           manager: manager._id,
+//           manager_trade: trade._id,
+//           type: trade.type,
+//           symbol: trade.symbol,
+//           manager_volume: trade.manager_volume,
+//           open_price: trade.open_price,
+//           close_price: trade.close_price,
+//           swap: trade.swap,
+//           open_time: new Date(trade.open_time).toISOString(),
+//           close_time: new Date(trade.close_time).toISOString(),
+//           manager_profit: trade.manager_profit,
+//           investor_profit: investorProfit,
+//           rollover_id: rollover_id,
+//         });
+//       }
+
+//       const lastEquity = manager.total_funds || 0;
+
+//       const dailyPercent = lastEquity > 0
+//       ? truncateToTwoDecimals((tradeProfit / lastEquity) * 100)
+//       : 0;
+                                 
+//       // // Append growth data
+//       // const newPoint = {
+//       //   date: new Date(trade.close_time).getTime(),
+//       //   value: dailyPercent,
+//       // };
+      
+//       // // Store growth data temporarily in map
+//       // if (!managerGrowthDataMap.has(manager._id.toString())) {
+//       //   managerGrowthDataMap.set(manager._id.toString(), []);
+//       // }
+//       // managerGrowthDataMap.get(manager._id.toString()).push(newPoint);
+
+//       const chartDate = dayjs(trade.close_time).startOf('day').toDate();
+//       const existingChart = await compountProfitChartModel.findOne({
+//         manager: manager._id,
+//         date: chartDate,
+//       }).session(session);
+
+//       if (existingChart) {
+//         const newValue = (1 + existingChart.value / 100) * (1 + dailyPercent / 100) - 1;
+//         existingChart.value = truncateToTwoDecimals(newValue * 100);
+//         await existingChart.save({ session });
+//       } else {
+//         await compountProfitChartModel.create([{
+//           manager: manager._id,
+//           date: chartDate,
+//           value: dailyPercent,
+//         }], { session });
+//       }
+
+//       bulkTradeUpdates.push({
+//         updateOne: {
+//           filter: { _id: trade._id },
+//           update: { is_distributed: true },
+//         },
+//       });
+
+//       bulkManagerUpdates.push({
+//         updateOne: {
+//           filter: { _id: manager._id },
+//           update: {
+//             $inc: {
+//               closed_trade_profit: tradeProfit,
+//               total_trade_profit: tradeProfit,
+//             },
+//             $set: {
+//               total_return: manager.total_trade_profit + tradeProfit,
+//             },
+//           },
+//         },
+//       });
 //     }
 
-//       // Execute bulk database operations **inside the transaction**
-//       if (bulkInvestmentUpdates.length) {
-//           const investmentResult = await investmentModel.bulkWrite(bulkInvestmentUpdates, { session });
-//           console.log("Investment bulk update result:", investmentResult);
-//       }
+//     // Execute all bulks
+//     if (bulkInvestmentUpdates.length) await investmentModel.bulkWrite(bulkInvestmentUpdates, { session });
+//     if (bulkInvestorTradeInserts.length) await investorTradeModel.insertMany(bulkInvestorTradeInserts, { session });
+//     if (bulkTradeUpdates.length) await managerTradeModel.bulkWrite(bulkTradeUpdates, { session });
+//     if (bulkManagerUpdates.length) await managerModel.bulkWrite(bulkManagerUpdates, { session });
+//     if (bulkCompoundedChartInserts.length) await compountProfitChartModel.insertMany(bulkCompoundedChartInserts, { session });
 
-//       if (bulkInvestorTradeInserts.length) {
-//           const investorTradeResult = await investorTradeModel.insertMany(bulkInvestorTradeInserts, { session });
-//           console.log("Investor trade insert result:", investorTradeResult.length, "documents inserted.");
-//       }
+//     await session.commitTransaction();
+//     session.endSession();
 
-//       if (bulkTradeUpdates.length) {
-//           const tradeUpdateResult = await managerTradeModel.bulkWrite(bulkTradeUpdates, { session });
-//           console.log("Trade bulk update result:", tradeUpdateResult);
-//       }
-
-//       if (bulkManagerUpdates.length) {
-//           const managerUpdateResult = await managerModel.bulkWrite(bulkManagerUpdates, { session });
-//           console.log("Manager bulk update result:", managerUpdateResult);
-//       }
-
-//       // Commit the transaction
-//       await session.commitTransaction();
-//       session.endSession();
-
-//       console.log("Trade distribution completed successfully.");
-//       return true;
+//     console.log("Trade distribution and compound chart update completed.");
+//     return true;
 //   } catch (error) {
-//       await session.abortTransaction();
-//       session.endSession();
-//       console.error("Error in trade distribution:", error);
-//       return false;
+//     await session.abortTransaction();
+//     session.endSession();
+//     console.error("Error in trade distribution:", error);
+//     return false;
 //   }
 // };
+
+const toTwoDecimals = (value) => {
+  const num = Number(value);
+  if (isNaN(num)) return 0;
+
+  // Truncate to 2 decimals (NOT rounding)
+  return Math.floor(num * 100) / 100;
+};
 
 const rollOverTradeDistribution = async (rollover_id) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    const unDistributedTrades = await managerTradeModel.find({ is_distributed: false }).session(session);
-    if (unDistributedTrades.length === 0) {
+    const unDistributedTrades = await managerTradeModel
+      .find({ is_distributed: false })
+      .session(session);
+
+    if (!unDistributedTrades.length) {
       console.log("No undistributed trades found.");
       await session.commitTransaction();
       session.endSession();
-      return true;
+      return 0; // profit distributed
     }
 
+    // BULK OPERATIONS
     const bulkInvestmentUpdates = [];
-    const bulkInvestorTradeInserts = [];
-    const bulkTradeUpdates = [];
     const bulkManagerUpdates = [];
-    const bulkCompoundedChartInserts = [];
+    const bulkTradeUpdates = [];
+    const investorTradeRows = [];
 
-    const managerGrowthDataMap = new Map(); 
+    let totalProfitDistributed = 0;
 
     for (const trade of unDistributedTrades) {
-      const tradeProfit = truncateToTwoDecimals(trade.manager_profit);
-      const manager = await managerModel.findById(trade.manager).session(session);
+      const tradeProfit = toTwoDecimals(trade.manager_profit);
+      totalProfitDistributed += tradeProfit;
 
+      // Fetch manager for this trade
+      const manager = await managerModel.findById(trade.manager).session(session);
       if (!manager) continue;
 
-      const investments = await investmentModel.find({ manager: manager._id }).session(session);
-      const totalFunds = investments.reduce((sum, inv) => sum + (inv.total_funds || 0), 0);
-      if (totalFunds === 0) continue;
+      //-------------------------------
+      // FETCH ALL INVESTMENTS FOR MANAGER
+      //-------------------------------
+      const investments = await investmentModel
+        .find({ manager: manager._id, status: "active" })
+        .session(session);
 
+      const totalFunds = investments.reduce(
+        (sum, inv) => sum + (inv.total_equity || 0),
+        0
+      );
+
+      if (totalFunds <= 0) continue;
+
+      //-------------------------------
+      // PROCESS EACH INVESTMENT
+      //-------------------------------
       for (const investment of investments) {
-        if (investment.total_funds < 1) continue;
+        if ((investment.total_equity || 0) < 1) continue;
 
-        const investorProfit = truncateToTwoDecimals(
-          (investment.total_funds / totalFunds) * tradeProfit
+        const investorProfit = toTwoDecimals(
+          (investment.total_equity / totalFunds) * tradeProfit
         );
-        const performanceFee = truncateToTwoDecimals(
+
+        const performanceFee = toTwoDecimals(
           (investorProfit * (investment.manager_performance_fee || 0)) / 100
         );
 
+        // Bulk update for investment
         bulkInvestmentUpdates.push({
           updateOne: {
             filter: { _id: investment._id },
@@ -302,71 +332,78 @@ const rollOverTradeDistribution = async (rollover_id) => {
                 closed_trade_profit: investorProfit,
                 performance_fee_projected: performanceFee,
               },
+              $set: { last_rollover: rollover_id },
             },
           },
         });
 
-        bulkInvestorTradeInserts.push({
-          investment: investment._id,
+        // Insert investor trade record
+        investorTradeRows.push({
           manager: manager._id,
+          investment: investment._id,
           manager_trade: trade._id,
+
           type: trade.type,
           symbol: trade.symbol,
           manager_volume: trade.manager_volume,
           open_price: trade.open_price,
           close_price: trade.close_price,
           swap: trade.swap,
-          open_time: new Date(trade.open_time).toISOString(),
-          close_time: new Date(trade.close_time).toISOString(),
+
+          open_time: trade.open_time,
+          close_time: trade.close_time,
+
           manager_profit: trade.manager_profit,
           investor_profit: investorProfit,
-          rollover_id: rollover_id,
+
+          rollover_id,
         });
       }
 
-      const lastEquity = manager.total_funds || 0;
+      //-------------------------------
+      // UPDATE COMPOUND PROFIT CHART
+      //-------------------------------
+      const chartDate = dayjs(trade.close_time).startOf("day").toDate();
 
-      const dailyPercent = lastEquity > 0
-      ? truncateToTwoDecimals((tradeProfit / lastEquity) * 100)
-      : 0;
-                                 
-      // // Append growth data
-      // const newPoint = {
-      //   date: new Date(trade.close_time).getTime(),
-      //   value: dailyPercent,
-      // };
-      
-      // // Store growth data temporarily in map
-      // if (!managerGrowthDataMap.has(manager._id.toString())) {
-      //   managerGrowthDataMap.set(manager._id.toString(), []);
-      // }
-      // managerGrowthDataMap.get(manager._id.toString()).push(newPoint);
+      const lastEquity = manager.total_funds || 1; // avoid divide-by-zero
+      const dailyPercent = toTwoDecimals((tradeProfit / lastEquity) * 100);
 
-      const chartDate = dayjs(trade.close_time).startOf('day').toDate();
-      const existingChart = await compountProfitChartModel.findOne({
-        manager: manager._id,
-        date: chartDate,
-      }).session(session);
+      const existingChart = await compountProfitChartModel
+        .findOne({ manager: manager._id, date: chartDate })
+        .session(session);
 
       if (existingChart) {
-        const newValue = (1 + existingChart.value / 100) * (1 + dailyPercent / 100) - 1;
-        existingChart.value = truncateToTwoDecimals(newValue * 100);
+        const newValue =
+          (1 + existingChart.value / 100) * (1 + dailyPercent / 100) - 1;
+
+        existingChart.value = toTwoDecimals(newValue * 100);
         await existingChart.save({ session });
       } else {
-        await compountProfitChartModel.create([{
-          manager: manager._id,
-          date: chartDate,
-          value: dailyPercent,
-        }], { session });
+        await compountProfitChartModel.create(
+          [
+            {
+              manager: manager._id,
+              date: chartDate,
+              value: dailyPercent,
+            },
+          ],
+          { session }
+        );
       }
 
+      //-------------------------------
+      // UPDATE MANAGER TRADE → distributed
+      //-------------------------------
       bulkTradeUpdates.push({
         updateOne: {
           filter: { _id: trade._id },
-          update: { is_distributed: true },
+          update: { $set: { is_distributed: true } },
         },
       });
 
+      //-------------------------------
+      // UPDATE MANAGER PROFIT
+      //-------------------------------
       bulkManagerUpdates.push({
         updateOne: {
           filter: { _id: manager._id },
@@ -375,34 +412,42 @@ const rollOverTradeDistribution = async (rollover_id) => {
               closed_trade_profit: tradeProfit,
               total_trade_profit: tradeProfit,
             },
-            $set: {
-              total_return: manager.total_trade_profit + tradeProfit,
-            },
           },
         },
       });
     }
 
-    // Execute all bulks
-    if (bulkInvestmentUpdates.length) await investmentModel.bulkWrite(bulkInvestmentUpdates, { session });
-    if (bulkInvestorTradeInserts.length) await investorTradeModel.insertMany(bulkInvestorTradeInserts, { session });
-    if (bulkTradeUpdates.length) await managerTradeModel.bulkWrite(bulkTradeUpdates, { session });
-    if (bulkManagerUpdates.length) await managerModel.bulkWrite(bulkManagerUpdates, { session });
-    if (bulkCompoundedChartInserts.length) await compountProfitChartModel.insertMany(bulkCompoundedChartInserts, { session });
+    //-------------------------------
+    // EXECUTE BULK OPERATIONS
+    //-------------------------------
+    if (bulkInvestmentUpdates.length)
+      await investmentModel.bulkWrite(bulkInvestmentUpdates, { session });
+
+    if (investorTradeRows.length)
+      await investorTradeModel.insertMany(investorTradeRows, { session });
+
+    if (bulkTradeUpdates.length)
+      await managerTradeModel.bulkWrite(bulkTradeUpdates, { session });
+
+    if (bulkManagerUpdates.length)
+      await managerModel.bulkWrite(bulkManagerUpdates, { session });
 
     await session.commitTransaction();
     session.endSession();
 
-    console.log("Trade distribution and compound chart update completed.");
-    return true;
+    console.log(
+      "Trade distribution completed. Profit distributed:",
+      totalProfitDistributed
+    );
+
+    return toTwoDecimals(totalProfitDistributed);
   } catch (error) {
     await session.abortTransaction();
     session.endSession();
     console.error("Error in trade distribution:", error);
-    return false;
+    return 0;
   }
 };
-
 
 
 module.exports = { 

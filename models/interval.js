@@ -4,26 +4,31 @@ const { Schema } = mongoose;
 const intervalSchema = new Schema({
     period: {
         type: String,
-        enum: ["daily", "weekly","monthly"],
+        enum: ["daily", "weekly", "monthly"],
         required: true,
-        default : "weekly"
+        default: "weekly"
     },
+
     status: { 
-      type: String, 
-      enum: ["pending", "completed", "failed"],
-      default: 'pending' 
+        type: String, 
+        enum: ["pending", "completed", "failed"],
+        default: "pending"
     },
-    current_interval_start: {
-        type: Date,
-    },
-    current_interval_end: { 
-        type: Date, 
-    },
-    current_intervel : {
-      type : String
-    }
-  },{ timestamps: true }
-);
+
+    // Date range of current interval
+    current_interval_start: { type: Date, required: true },
+    current_interval_end: { type: Date, required: true },
+
+    // Readable string: "Feb 18–24 2025"
+    current_intervel: { type: String, required: true },
+
+    // Unique interval number
+    interval_index: { type: String }, // Example: "2025-W07"
+
+    // How many investments were updated?
+    total_investments_processed: { type: Number, default: 0 }
+    
+}, { timestamps: true });
   
 const intervalModel = mongoose.model('interval', intervalSchema);
 module.exports = intervalModel;

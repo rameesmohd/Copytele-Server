@@ -35,7 +35,7 @@ const fetchMyInvesters = async(req,res)=>{
         // Get paginated data
         const result = await investmentModel
         .find(matchQuery)
-        .populate('user', 'email')
+        .populate('user', 'email telegram login_type')
         .sort({createdAt : -1})
         .skip(skip)
         .limit(Number(pageSize))
@@ -136,9 +136,36 @@ const login = async (req, res) => {
   }
 };
 
+const managerLogout = (req, res) => {
+  try {
+    res.clearCookie("managerToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+      path: "/api/manager",
+      ...(process.env.NODE_ENV === "production" && {
+            domain: process.env.DOMAIN,
+      }),
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    })
+
+    return res.status(200).json({
+      success: true,
+      msg: "Manager logged out successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      errMsg: "Logout failed",
+      error: error.message,
+    });
+  }
+};
+
+
 
 module.exports = { 
     getManagerData,
     fetchMyInvesters,
-    login
+    login,
+    managerLogout
 }

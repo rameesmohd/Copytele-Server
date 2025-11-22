@@ -1,0 +1,163 @@
+const cron = require("node-cron");
+const rolloverModel = require("../models/rollover");
+const investmentTxModel = require("../models/investmentTx");
+const { getNextRolloverTime } = require("../utils/time");
+const {
+  approveDepositTransaction,
+  approveWithdrawalTransaction,
+} = require("../controllers/master/invController");
+const { rollOverTradeDistribution } = require("../controllers/tradeController");
+
+// Cleaner logging
+const log = (...args) => console.log("[ROLLOVER]", ...args);
+
+
+
+//------------------------------------------------------------
+//  PROCESS ONE ROLLOVER
+//------------------------------------------------------------
+const processRollover = async (rolloverId) => {
+  try {
+    const rollover = await rolloverModel.findById(rolloverId);
+    if (!rollover) return log("❌ Rollover not found:", rolloverId);
+
+    log("⚙️ Processing rollover:", rolloverId);
+
+    //------------------------------------------------------------
+    // 1️⃣ Profit Distribution
+    //------------------------------------------------------------
+    const profitDistributed = await rollOverTradeDistribution(rolloverId);
+
+
+    //------------------------------------------------------------
+    // 2️⃣ Fetch pending deposits + withdraws
+    //------------------------------------------------------------
+    const [pendingDeposits, pendingWithdrawals] = await Promise.all([
+      investmentTxModel.find({ status: "pending", type: "deposit" }),
+      investmentTxModel.find({ status: "pending", type: "withdrawal" }),
+    ]);
+
+    const processedTxnIds = [];
+
+    //------------------------------------------------------------
+    // 3️⃣ Approve deposits
+    //------------------------------------------------------------
+    for (const tx of pendingDeposits) {
+      const ok = await approveDepositTransaction(tx._id, rolloverId);
+      if (ok) processedTxnIds.push(tx._id);
+      else log("❌ Deposit failed:", tx._id);
+    }
+
+    //------------------------------------------------------------
+    // 4️⃣ Approve withdrawals
+    //------------------------------------------------------------
+    for (const tx of pendingWithdrawals) {
+      const ok = await approveWithdrawalTransaction(tx._id, rolloverId);
+      if (ok) processedTxnIds.push(tx._id);
+      else log("❌ Withdrawal failed:", tx._id);
+    }
+
+
+    //------------------------------------------------------------
+    // 5️⃣ Save processed transactions & summary
+    //------------------------------------------------------------
+    rollover.status = "completed";
+    rollover.processed_at = new Date();
+    rollover.processed_transactions = processedTxnIds;
+
+    rollover.summary = {
+      total_deposits: pendingDeposits.length,
+      total_withdrawals: pendingWithdrawals.length,
+      profit_distributed: Number(profitDistributed || 0),
+    };
+
+    await rollover.save();
+
+    log(`✅ Rollover ${rolloverId} completed at ${rollover.processed_at}`);
+  } catch (error) {
+    log("❌ Error during rollover:", error);
+
+    // Update failed status
+    await rolloverModel.findByIdAndUpdate(rolloverId, {
+      status: "failed",
+      failure_reason: error?.message || "Unknown Error",
+    });
+  }
+};
+
+
+
+//------------------------------------------------------------
+//  CREATE NEW ROLLOVER
+//------------------------------------------------------------
+const createRollover = async (period) => {
+  try {
+    const now = new Date();
+
+    const rollover = new rolloverModel({
+      period,
+      start_time: now,
+      status: "pending",
+      next_rollover_time: getNextRolloverTime(now, period),
+      processed_transactions: [],
+      summary: {
+        total_deposits: 0,
+        total_withdrawals: 0,
+        profit_distributed: 0,
+      },
+    });
+
+    await rollover.save();
+
+    log("🆕 Created rollover:", rollover._id);
+
+    await processRollover(rollover._id);
+  } catch (err) {
+    log("❌ Error creating rollover:", err);
+  }
+};
+
+
+
+//------------------------------------------------------------
+//  FETCH LATEST COMPLETED ROLLOVER
+//------------------------------------------------------------
+const fetchLatestCompletedRollover = async () => {
+  const last = await rolloverModel
+    .findOne({ status: "completed" })
+    .sort({ start_time: -1 });
+
+  if (!last) {
+    log("ℹ️ No completed rollovers found");
+    return null;
+  }
+
+  log("📌 Latest completed rollover:", last._id);
+  return last;
+};
+
+
+
+//------------------------------------------------------------
+//  CRON SCHEDULES
+//------------------------------------------------------------
+
+// Every 4 hours, Monday–Friday
+cron.schedule("0 */4 * * 1-5", () => {
+  log("⏱ Running scheduled 4hr rollover");
+  createRollover("4hr");
+});
+
+// 15-minute testing (enable when needed)
+cron.schedule("*/15 * * * *", () => {
+  log("🧪 Running test 15min rollover");
+  createRollover("15min");
+});
+
+
+
+module.exports = {
+  createRollover,
+  processRollover,
+  fetchLatestCompletedRollover,
+};
