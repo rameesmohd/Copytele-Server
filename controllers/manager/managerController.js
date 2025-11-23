@@ -4,6 +4,8 @@ const jwt = require("jsonwebtoken");
 const { fetchAndUseLatestRollover } = require('../rolloverController')
 const { default: mongoose } = require('mongoose');
 const bcrypt = require("bcrypt");
+const managerTradeModel = require('../../models/managerTrades');
+const InvestmentTransaction = require('../../models/investmentTx');
 
 const getManagerData=async(req,res)=>{
     try {
@@ -161,11 +163,30 @@ const managerLogout = (req, res) => {
   }
 };
 
-
+const fetchAccountData=async(req,res)=>{
+  try {
+    const { manager_id } = req.query
+    const trades = await managerTradeModel.find({manager : manager_id}).sort({createdAt : -1})
+    const accTransactions  = await InvestmentTransaction.find({manager : manager_id}).sort({createdAt : -1})
+    return res.status(200).json({
+       success : true,
+       result : {
+          trades,
+          accTransactions
+       }
+    })
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+}
 
 module.exports = { 
     getManagerData,
     fetchMyInvesters,
     login,
-    managerLogout
+    managerLogout,
+    fetchAccountData
 }

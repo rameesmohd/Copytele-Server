@@ -252,12 +252,10 @@ const getDailyGrowthData = async (managerId) => {
 //   }
 // };
 
-const toTwoDecimals = (value) => {
-  const num = Number(value);
-  if (isNaN(num)) return 0;
-
-  // Truncate to 2 decimals (NOT rounding)
-  return Math.floor(num * 100) / 100;
+// helper: safe 2-decimal rounding (returns Number)
+const toTwoDecimals = (v) => {
+  const n = Number(v) || 0;
+  return Number(n.toFixed(2));
 };
 
 const rollOverTradeDistribution = async (rollover_id) => {
@@ -281,28 +279,28 @@ const rollOverTradeDistribution = async (rollover_id) => {
     const investorTradeRows = [];
 
     let totalProfitDistributed = 0;
-    console.log(unDistributedTrades);
-    
+    const touchedManagers = new Set();
+
     for (const trade of unDistributedTrades) {
       const tradeProfit = toTwoDecimals(trade.manager_profit);
-      totalProfitDistributed += tradeProfit;
+      totalProfitDistributed = toTwoDecimals(totalProfitDistributed + tradeProfit);
 
       const manager = await managerModel.findById(trade.manager).session(session);
       if (!manager) continue;
+      touchedManagers.add(manager._id.toString());
 
       const investments = await investmentModel
         .find({ manager: manager._id, status: "active" })
         .session(session);
 
       const totalFunds = investments.reduce(
-        (sum, inv) => sum + (inv.total_equity || 0),
+        (sum, inv) => sum + (Number(inv.total_equity) || 0),
         0
       );
-
       if (totalFunds <= 0) continue;
 
       for (const investment of investments) {
-        if (investment.total_equity < 1) continue;
+        if ((investment.total_equity || 0) < 1) continue;
 
         const investorProfit = toTwoDecimals(
           (investment.total_equity / totalFunds) * tradeProfit
@@ -321,7 +319,7 @@ const rollOverTradeDistribution = async (rollover_id) => {
                 current_interval_profit_equity: investorProfit,
                 total_trade_profit: investorProfit,
                 closed_trade_profit: investorProfit,
-                total_equity: investorProfit,   // FIXED
+                total_equity: investorProfit,
                 performance_fee_projected: performanceFee,
               },
               $set: { last_rollover: rollover_id },
@@ -341,15 +339,15 @@ const rollOverTradeDistribution = async (rollover_id) => {
           swap: trade.swap,
           open_time: trade.open_time,
           close_time: trade.close_time,
-          manager_profit: trade.manager_profit,
+          manager_profit: investorProfit,
           investor_profit: investorProfit,
           rollover_id,
         });
       }
 
-      // COMPOUND PROFIT CHART
+      // ---------- COMPOUND CHART ----------
       const chartDate = dayjs(trade.close_time).startOf("day").toDate();
-      const lastEquity = manager.total_funds || 1;
+      const lastEquity = Number(manager.total_funds) || 1;
       const dailyPercent = toTwoDecimals((tradeProfit / lastEquity) * 100);
 
       const existingChart = await compountProfitChartModel
@@ -388,13 +386,14 @@ const rollOverTradeDistribution = async (rollover_id) => {
             $inc: {
               closed_trade_profit: tradeProfit,
               total_trade_profit: tradeProfit,
-              total_funds: tradeProfit, // FIXED
+              total_funds: tradeProfit,
             },
           },
         },
       });
     }
 
+    // ---------- BULK DB OPERATIONS ----------
     if (bulkInvestmentUpdates.length)
       await investmentModel.bulkWrite(bulkInvestmentUpdates, { session });
 
@@ -407,6 +406,34 @@ const rollOverTradeDistribution = async (rollover_id) => {
     if (bulkManagerUpdates.length)
       await managerModel.bulkWrite(bulkManagerUpdates, { session });
 
+    // -----------------------------------------------------
+    // FINAL STAGE — RECALCULATE total_return SAFELY
+    // -----------------------------------------------------
+    const managerIds = Array.from(touchedManagers);
+
+    // --------- RECALCULATE TOTAL RETURN (CORRECT FORMULA) ----------
+    const managers = await managerModel
+      .find({ _id: { $in: managerIds } })
+      .session(session);
+
+    for (const m of managers) {
+      const deposit = Number(m.total_deposit) || 0;
+      const tradeProfit = Number(m.total_trade_profit) || 0;
+
+      let totalReturn = 0;
+      if (deposit > 0) {
+        totalReturn = toTwoDecimals((tradeProfit / deposit) * 100);
+      }
+
+      await managerModel.updateOne(
+        { _id: m._id },
+        { $set: { total_return: totalReturn } },
+        { session }
+      );
+    }
+
+
+    // ---------- COMPLETE TRANSACTION ----------
     await session.commitTransaction();
     session.endSession();
 
@@ -418,7 +445,6 @@ const rollOverTradeDistribution = async (rollover_id) => {
     return 0;
   }
 };
-
 
 module.exports = { 
     addTradeToManager,

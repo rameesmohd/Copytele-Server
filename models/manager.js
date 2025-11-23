@@ -147,6 +147,12 @@ const managerSchema = new Schema(
       set: toTwoDecimals,
     },
 
+    total_deposit: { 
+      type: Number, 
+      default: 0.0 ,
+      set: toTwoDecimals
+    },
+
     total_investors: {
       type: Number,
       default: 0,

@@ -1,5 +1,6 @@
 const managerModel = require('../../models/manager');
 const userTransactionModel = require('../../models/userTx')
+const managerTrades = require('../../models/managerTrades')
 
 const fetchUserWallet = async (req, res) => {
   try {
@@ -119,7 +120,33 @@ const fetchUserWalletTransactions = async (req, res) => {
 const fetchManager =async(req,res)=>{
     try {
         const {id} = req.query
+        const recentTradeslimit = 3
         const manager =  await managerModel.findOne({id : id },{password : 0})
+        const recentTrades = await managerTrades
+          .find({ manager: manager._id })
+          .sort({ createdAt: -1 })       // newest first
+          .limit(recentTradeslimit);
+
+        if(manager){
+            return res.status(200).json({
+              status : "success",
+              manager,
+              recentTrades
+            })
+        }else{
+            return res.status(200).json({errMsg : "Invalid id"})
+        }
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ errMsg: 'Server error!', error: error.message });
+    }
+}
+
+const fetchManagerRecentTrades =async(req,res)=>{
+    try {
+        const { id } = req.query
+        const limit = 3 
+        const manager =  await managerTrades.findOne({id : id },{password : 0})
         if(manager){
             return res.status(200).json({result : manager})
         }else{
@@ -130,6 +157,7 @@ const fetchManager =async(req,res)=>{
         res.status(500).json({ errMsg: 'Server error!', error: error.message });
     }
 }
+
 
 module.exports = {
     fetchUserWallet,

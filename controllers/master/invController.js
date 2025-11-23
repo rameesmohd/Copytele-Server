@@ -717,7 +717,7 @@ const approveDepositTransaction = async (transactionId, rollover_id) => {
         const isNewInvestor = otherInvestmentsCount === 0;
 
         // Update manager totals
-        const managerInc = { total_funds: depositAmount };
+        const managerInc = { total_funds: depositAmount,total_deposit : depositAmount };
         if (isNewInvestor) managerInc.total_investors = 1;
 
         await managerModel.findByIdAndUpdate(

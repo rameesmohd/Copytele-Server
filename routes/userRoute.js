@@ -5,6 +5,7 @@ const auth = require('../controllers/userTele/authController');
 const user = require('../controllers/userTele/userController');
 const payment = require('../controllers/userTele/paymentController');
 const investment = require('../controllers/userTele/invController');
+const manager = require('../controllers/manager/managerController')
 const chart = require('../controllers/chartController');
 
 router.route('/user')
@@ -29,7 +30,7 @@ router.route('/wallet')
 router.route('/transactions')
       .get(user.fetchUserWalletTransactions)
 
-router.route('/manager')
+router.route('/manager-portfolio')
       .get(user.fetchManager)
 
 router.route('/invest')
@@ -41,10 +42,10 @@ router.route('/porfolio')
 router.route('/portfolio/history')
       .post(investment.fetchInvTransactions)
 
-router.get('/compound-growth/:managerId',chart.fetchChartData)
-
 router.get("/chart/daily", chart.getDailyChart);
 router.get("/chart/weekly", chart.getWeeklyChart);
 router.get("/chart/monthly", chart.getMonthlyChart);
+
+router.get("/account-history/manager",manager.fetchAccountData)
 
 module.exports=router
