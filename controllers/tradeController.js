@@ -3,7 +3,7 @@ const investmentModel = require('../models/investment');
 const investorTradeModel = require('../models/invTrades');
 const managerModel = require('../models/manager')
 const managerTradeModel = require('../models/managerTrades')
-const compountProfitChartModel = require('../models/compoundProfitChart')
+const managerGrowthChart = require('../models/managerGrowthChart')
 const { ObjectId } = require('mongoose').Types;
 const dayjs = require('dayjs');
 
@@ -192,7 +192,7 @@ const getDailyGrowthData = async (managerId) => {
 //       // managerGrowthDataMap.get(manager._id.toString()).push(newPoint);
 
 //       const chartDate = dayjs(trade.close_time).startOf('day').toDate();
-//       const existingChart = await compountProfitChartModel.findOne({
+//       const existingChart = await managerGrowthChart.findOne({
 //         manager: manager._id,
 //         date: chartDate,
 //       }).session(session);
@@ -202,7 +202,7 @@ const getDailyGrowthData = async (managerId) => {
 //         existingChart.value = truncateToTwoDecimals(newValue * 100);
 //         await existingChart.save({ session });
 //       } else {
-//         await compountProfitChartModel.create([{
+//         await managerGrowthChart.create([{
 //           manager: manager._id,
 //           date: chartDate,
 //           value: dailyPercent,
@@ -237,7 +237,7 @@ const getDailyGrowthData = async (managerId) => {
 //     if (bulkInvestorTradeInserts.length) await investorTradeModel.insertMany(bulkInvestorTradeInserts, { session });
 //     if (bulkTradeUpdates.length) await managerTradeModel.bulkWrite(bulkTradeUpdates, { session });
 //     if (bulkManagerUpdates.length) await managerModel.bulkWrite(bulkManagerUpdates, { session });
-//     if (bulkCompoundedChartInserts.length) await compountProfitChartModel.insertMany(bulkCompoundedChartInserts, { session });
+//     if (bulkCompoundedChartInserts.length) await managerGrowthChart.insertMany(bulkCompoundedChartInserts, { session });
 
 //     await session.commitTransaction();
 //     session.endSession();
@@ -353,7 +353,7 @@ const rollOverTradeDistribution = async (rollover_id) => {
       const lastEquity = Number(manager.total_funds) || 1;
       const dailyPercent = toTwoDecimals((tradeProfit / lastEquity) * 100);
 
-      const existingChart = await compountProfitChartModel
+      const existingChart = await managerGrowthChart
         .findOne({ manager: manager._id, date: chartDate })
         .session(session);
 
@@ -363,7 +363,7 @@ const rollOverTradeDistribution = async (rollover_id) => {
         existingChart.value = toTwoDecimals(newValue * 100);
         await existingChart.save({ session });
       } else {
-        await compountProfitChartModel.create(
+        await managerGrowthChart.create(
           [
             {
               manager: manager._id,

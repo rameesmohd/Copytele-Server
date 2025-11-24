@@ -1,4 +1,4 @@
-const compountProfitChartModel = require("../models/compoundProfitChart");
+const managerGrowthChart = require("../models/managerGrowthChart");
 const managerModel = require("../models/manager");
 const dayjs = require("dayjs");
 const isoWeek = require("dayjs/plugin/isoWeek");
@@ -13,7 +13,7 @@ const getDailyChart = async (req, res) => {
 
     const start = dayjs().subtract(days, "day").startOf("day").toDate();
 
-    const data = await compountProfitChartModel
+    const data = await managerGrowthChart
       .find({
         manager: manager_id,
         date: { $lte: new Date(), $gte: start }
@@ -41,7 +41,7 @@ const getWeeklyChart = async (req, res) => {
 
     const start = dayjs().subtract(weeks * 7, "day").startOf("day").toDate();
 
-    const rows = await compountProfitChartModel
+    const rows = await managerGrowthChart
       .find({ manager: manager_id, date: { $gte: start } })
       .sort({ date: 1 });
 
@@ -90,7 +90,7 @@ const getMonthlyChart = async (req, res) => {
 
     const start = dayjs().subtract(months, "month").startOf("month").toDate();
 
-    const rows = await compountProfitChartModel
+    const rows = await managerGrowthChart
       .find({ manager: manager_id, date: { $gte: start } })
       .sort({ date: 1 });
 
@@ -117,7 +117,7 @@ const getMonthlyChart = async (req, res) => {
 
 const fetchChartData=async(req,res)=>{
     try {
-        const data = await compountProfitChartModel
+        const data = await managerGrowthChart
         .find({ manager: req.params.managerId })
         .sort({ date: 1 })
         .select({ date: 1, value: 1, _id: 0 });

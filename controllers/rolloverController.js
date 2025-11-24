@@ -43,20 +43,20 @@ const fetchAndApprovePendingInvestmentTransactions = async (rollover_id) => {
     console.log(
       `📥 Pending Deposits: ${pendingDeposits.length} | 📤 Pending Withdrawals: ${pendingWithdrawals.length}`
     );
+    
+    /* -----------------------------------------
+       STEP 1: Distribute trade profits
+    ----------------------------------------- */
+    console.log("📊 Running trade distribution...");
+    await rollOverTradeDistribution(rollover_id, session);
 
     /* -----------------------------------------
-       STEP 1: Approve all deposits first
+       STEP 2: Approve all deposits first
     ----------------------------------------- */
     for (const tx of pendingDeposits) {
       const ok = await approveDepositTransaction(tx._id, rollover_id, session);
       console.log(`Deposit ${tx._id}: ${ok ? "Approved" : "Failed"}`);
     }
-
-    /* -----------------------------------------
-       STEP 2: Distribute trade profits
-    ----------------------------------------- */
-    console.log("📊 Running trade distribution...");
-    await rollOverTradeDistribution(rollover_id, session);
 
     /* -----------------------------------------
        STEP 3: Approve withdrawals last
