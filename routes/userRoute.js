@@ -7,10 +7,16 @@ const payment = require('../controllers/userTele/paymentController');
 const investment = require('../controllers/userTele/invController');
 const manager = require('../controllers/manager/managerController')
 const chart = require('../controllers/chartController');
+const { fetchCountryList } = require('../controllers/common/fetchCountryList')
 
 router.post('/user',auth.teleUser)
 
+router.get('/list-countries',fetchCountryList)
+
 router.use(verifyUser)
+
+router.post('/user/update-details',user.updateUserDetails)
+
 
 router.route('/deposit/usdt-trc20')
       .get(payment.trc20CreateDeposit) 

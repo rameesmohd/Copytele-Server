@@ -2,6 +2,7 @@ const userTransactionModel = require('../../models/userTx')
 const InvestmentTransaction = require('../../models/investmentTx');
 const InvestmentTrades  = require('../../models/investmentTrades');
 const InvestmentModel = require('../../models/investment')
+const UserModel = require('../../models/user')
 
 const fetchUserWallet = async (req, res) => {
   try {
@@ -243,8 +244,51 @@ const fetchAccountData = async (req, res) => {
   }
 };
 
+const updateUserDetails = async (req, res) => {
+  try {
+    const { country, email, mobile } = req.body;
+    const user = req.user;
+
+    const update = {};
+
+    if (country) update.country = country;
+    if (mobile) update.mobile = mobile;
+
+    // If email changed → reset verification
+    if (email && email !== user.email) {
+      // email format validation optional
+      if (!/^\S+@\S+\.\S+$/.test(email)) {
+        return res.status(400).json({ success: false, message: "Invalid email format" });
+      }
+
+      update.email = email;
+      update["kyc.is_email_verified"] = false; // reset email verification
+    }
+
+    const result = await UserModel.findByIdAndUpdate(
+      user._id,
+      { $set: update },
+      { new: true }
+    ).lean();
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      result,
+    });
+
+  } catch (error) {
+    console.error("Profile update error:", error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
 module.exports = {
     fetchUserWallet,
     fetchUserWalletTransactions,
-    fetchAccountData
+    fetchAccountData,
+
+    updateUserDetails,
+
 }
