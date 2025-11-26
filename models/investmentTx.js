@@ -21,7 +21,6 @@ const investmentTransactionSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "managers",
       required: true,
-      index: true,
     },
 
     // deposit → money entering investment
@@ -31,7 +30,6 @@ const investmentTransactionSchema = new Schema(
       type: String,
       enum: ["deposit", "withdrawal", "manager_fee"],
       required: true,
-      index: true,
     },
 
     // From and To show source/destination reference

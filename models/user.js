@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema({
 
   /* TELEGRAM USERS */
   telegram: {
-    id: { type: String, unique: true, sparse: true, index: true },
+    id: { type: String, unique: true, sparse: true },
     username: String,
     first_name: String,
     last_name: String,
@@ -26,7 +26,6 @@ const userSchema = new mongoose.Schema({
     type: String,
     lowercase: true,
     sparse: true,
-    index: true,
   },
   password: { type: String },
 
@@ -37,10 +36,8 @@ const userSchema = new mongoose.Schema({
   country_code: String,
   date_of_birth: Date,
 
-  /* STATUS FLAGS */
   is_blocked: { type: Boolean, default: false },
 
-  /* KYC */
   kyc: {
     is_email_verified: { type: Boolean, default: false },
     is_verified: { type: Boolean, default: false },
@@ -51,26 +48,22 @@ const userSchema = new mongoose.Schema({
     residential_proof_status: { type: String, enum: ["submitted", "verified", "unavailable"], default: "unavailable" },
   },
 
-  /* WALLETS */
   wallets: {
     main_id: {
       type: String,
       default: () => Math.random().toString(36).substring(2, 10).toUpperCase(),
       unique: true,
-      index: true
     },
     main: { type: Number, default: 0, set: twoDecimalPlaces },
-    
+
     rebate_id: {
       type: String,
       default: () => Math.random().toString(36).substring(2, 10).toUpperCase(),
       unique: true,
-      index: true
     },
     rebate: { type: Number, default: 0, set: twoDecimalPlaces },
   },
 
-  /* REFERRALS */
   referral: {
     total_earned_commission: { type: Number, default: 0, set: twoDecimalPlaces },
     total_referrals: { type: Number, default: 0 },
@@ -90,7 +83,7 @@ const userSchema = new mongoose.Schema({
 /* PERFORMANCE INDEXES */
 userSchema.index({ login_type: 1 });
 userSchema.index({ createdAt: -1 });
-userSchema.index({ "telegram.id": 1 });
+// userSchema.index({ "telegram.id": 1 });
 userSchema.index({ "referral.referred_by": 1 });
 userSchema.index({ "wallets.main": -1 });
 
