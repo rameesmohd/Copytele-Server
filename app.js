@@ -34,11 +34,11 @@ app.use(helmet({
 
 app.set('trust proxy', 1);
 
-const Domain = process.env.DOMAIN
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3001',
-   Domain
+  'https://www.4xmeta.com',
+  'https://api.4xmeta.com'
 ];
 
 const corsOptions = {
