@@ -8,9 +8,6 @@ const {
 } = require("../controllers/master/invController");
 const { rollOverTradeDistribution } = require("../controllers/tradeController");
 
-// Cleaner logging
-// const log = (...args) => console.log("[ROLLOVER]", ...args);
-
 //------------------------------------------------------------
 //  PROCESS ONE ROLLOVER
 //------------------------------------------------------------
@@ -18,8 +15,6 @@ const processRollover = async (rolloverId) => {
   try {
     const rollover = await rolloverModel.findById(rolloverId);
     if (!rollover) return log("❌ Rollover not found:", rolloverId);
-
-    log("⚙️ Processing rollover:", rolloverId);
 
     //------------------------------------------------------------
     // 1️⃣ Profit Distribution
@@ -43,7 +38,7 @@ const processRollover = async (rolloverId) => {
     for (const tx of pendingDeposits) {
       const ok = await approveDepositTransaction(tx._id, rolloverId);
       if (ok) processedTxnIds.push(tx._id);
-      else log("❌ Deposit failed:", tx._id);
+      else console.log("❌ Deposit failed:", tx._id);
     }
 
     //------------------------------------------------------------
@@ -52,7 +47,7 @@ const processRollover = async (rolloverId) => {
     for (const tx of pendingWithdrawals) {
       const ok = await approveWithdrawalTransaction(tx._id, rolloverId);
       if (ok) processedTxnIds.push(tx._id);
-      else log("❌ Withdrawal failed:", tx._id);
+      else console.log("❌ Withdrawal failed:", tx._id);
     }
 
 
@@ -71,9 +66,9 @@ const processRollover = async (rolloverId) => {
 
     await rollover.save();
 
-    log(`✅ Rollover ${rolloverId} completed at ${rollover.processed_at}`);
+    console.log(`✅ Rollover ${rolloverId} completed at ${rollover.processed_at}`);
   } catch (error) {
-    log("❌ Error during rollover:", error);
+    console.log("❌ Error during rollover:", error);
 
     // Update failed status
     await rolloverModel.findByIdAndUpdate(rolloverId, {
