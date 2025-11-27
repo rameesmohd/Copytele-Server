@@ -40,7 +40,6 @@ const allowedOrigins = [
   'https://www.4xmeta.com',
   'https://api.4xmeta.com',
   'https://app.4xmeta.com'
-  
 ];
 
 const corsOptions = {
