@@ -38,7 +38,9 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3001',
   'https://www.4xmeta.com',
-  'https://api.4xmeta.com'
+  'https://api.4xmeta.com',
+  'https://app.4xmeta.com'
+  
 ];
 
 const corsOptions = {
