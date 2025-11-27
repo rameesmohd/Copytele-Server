@@ -14,7 +14,7 @@ const { rollOverTradeDistribution } = require("../controllers/tradeController");
 const processRollover = async (rolloverId) => {
   try {
     const rollover = await rolloverModel.findById(rolloverId);
-    if (!rollover) return log("❌ Rollover not found:", rolloverId);
+    if (!rollover) return console.log("❌ Rollover not found:", rolloverId);
 
     //------------------------------------------------------------
     // 1️⃣ Profit Distribution
@@ -66,7 +66,7 @@ const processRollover = async (rolloverId) => {
 
     await rollover.save();
 
-    console.log(`✅ Rollover ${rolloverId} completed at ${rollover.processed_at}`);
+    // console.log(`✅ Rollover ${rolloverId} completed at ${rollover.processed_at}`);
   } catch (error) {
     console.log("❌ Error during rollover:", error);
 
@@ -102,11 +102,11 @@ const createRollover = async (period) => {
 
     await rollover.save();
 
-    log("🆕 Created rollover:", rollover._id);
+    // console.log("🆕 Created rollover:", rollover._id);
 
     await processRollover(rollover._id);
   } catch (err) {
-    log("❌ Error creating rollover:", err);
+    console.log("❌ Error creating rollover:", err);
   }
 };
 
@@ -121,11 +121,11 @@ const fetchLatestCompletedRollover = async () => {
     .sort({ start_time: -1 });
 
   if (!last) {
-    log("ℹ️ No completed rollovers found");
+    console.log("ℹ️ No completed rollovers found");
     return null;
   }
 
-  log("📌 Latest completed rollover:", last._id);
+  console.log("📌 Latest completed rollover:", last._id);
   return last;
 };
 
@@ -134,14 +134,14 @@ const fetchLatestCompletedRollover = async () => {
 //------------------------------------------------------------
 
 // Every 4 hours, Monday–Friday
-cron.schedule("0 */4 * * 1-5", () => {
-  log("⏱ Running scheduled 4hr rollover");
-  createRollover("4hr");
-});
+// cron.schedule("0 */4 * * 1-5", () => {
+//   console.log("⏱ Running scheduled 4hr rollover");
+//   createRollover("4hr");
+// });
 
 // 15-minute testing (enable when needed)
 cron.schedule("*/15 * * * *", () => {
-  log("🧪 Running test 15min rollover");
+  console.log("🧪 Running test 15min rollover");
   createRollover("15min");
 });
 
