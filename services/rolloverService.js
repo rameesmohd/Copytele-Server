@@ -9,9 +9,7 @@ const {
 const { rollOverTradeDistribution } = require("../controllers/tradeController");
 
 // Cleaner logging
-const log = (...args) => console.log("[ROLLOVER]", ...args);
-
-
+// const log = (...args) => console.log("[ROLLOVER]", ...args);
 
 //------------------------------------------------------------
 //  PROCESS ONE ROLLOVER
@@ -135,8 +133,6 @@ const fetchLatestCompletedRollover = async () => {
   log("📌 Latest completed rollover:", last._id);
   return last;
 };
-
-
 
 //------------------------------------------------------------
 //  CRON SCHEDULES
