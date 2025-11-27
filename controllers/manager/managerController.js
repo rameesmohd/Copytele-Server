@@ -7,22 +7,37 @@
   const managerTradeModel = require('../../models/managerTrades');
   const InvestmentTransaction = require('../../models/investmentTx');
 
-  const getManagerData=async(req,res)=>{
-      try {
-          const {_id} = req.query
-          const manager = await managerModel.findById({_id},{
-              password:0,
-              my_investments:0,
-              trade_history:0,
-              growth_data:0,
-              _v: 0
-          })
-          const latestRollover = await fetchAndUseLatestRollover()
-          res.status(200).json({result : manager,rollover : latestRollover})
-      } catch (error) {
-          res.status(500).json({errMsg : 'sever side error'})
-      }
-  }
+  const getManagerData = async (req, res) => {
+    try {
+      const { _id } = req.query;
+
+      if (!_id) return res.status(400).json({ errMsg: "Manager ID required" });
+
+      const manager = await managerModel.findById(
+        _id,
+        {
+          password: 0,
+          my_investments: 0,
+          trade_history: 0,
+          growth_data: 0,
+          __v: 0
+        }
+      );
+
+      if (!manager) return res.status(404).json({ errMsg: "Manager not found" });
+
+      const latestRollover = await fetchAndUseLatestRollover();
+
+      return res.status(200).json({
+        result: manager,
+        rollover: latestRollover
+      });
+
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ errMsg: 'server side error' });
+    }
+  };
 
   const fetchMyInvesters = async(req,res)=>{
       try {

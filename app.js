@@ -78,7 +78,6 @@ app.use('/api/manager',managerRoute);
 
 app.use('/api',userRoute);
 
-
 app.use((err, req, res, next) => {
     console.error(err.stack);
     if (err.message === 'Not allowed by CORS') {
