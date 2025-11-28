@@ -39,7 +39,8 @@ const allowedOrigins = [
   'http://localhost:3001',
   'https://www.4xmeta.com',
   'https://api.4xmeta.com',
-  'https://app.4xmeta.com'
+  'https://app.4xmeta.com',
+  'https://admin.4xmeta.com'
 ];
 
 const corsOptions = {
@@ -57,14 +58,12 @@ const corsOptions = {
   optionsSuccessStatus: 204,
 };
 
-
 app.use(cors(corsOptions)); 
 app.use(express.json({ limit: "10mb" })); 
 app.use(express.urlencoded({ limit: "10mb", extended: true })); 
 app.use(cookieParser());
 require('./services/rolloverService.js')
 require('./services/intervalservice.js')
-
 
 const limiter = rateLimit({
   windowMs: 10 * 60 * 1000, 
