@@ -1,13 +1,10 @@
 const express = require('express')
 const router = express.Router();
-const { botAuth } = require('../middlewares/botAuth')
+const { botAuth } = require('../middlewares/botAuth');
+const { saveUser } = require('../controllers/bot/userController');
 
 router.use(botAuth)
 
-router.post('/save-user',(req,res)=>{
-    console.log(req.body);
-    console.log("fetched telegram");
-    res.send(200)
-})
+router.post('/save-user',saveUser)
 
 module.exports=router
