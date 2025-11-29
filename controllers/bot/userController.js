@@ -9,15 +9,12 @@ const BotUser = require('../../models/botUsers')
 
 const saveUser=async(req,res)=>{
     try {
-    const payload = req.body
-    const existingUser = await BotUser.findOne({ id: payload.telegramId });
-    if (!existingUser) {
+        const payload = req.body
         await BotUser.findOneAndUpdate(
             { id: payload.telegramId },
             { $set: payload },
             { upsert: true, new: true }
         );
-    }
         return res.status(200).json({success: true})
     } catch (error) {
         console.log(error);
