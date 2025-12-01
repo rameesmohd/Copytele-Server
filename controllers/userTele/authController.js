@@ -1,4 +1,5 @@
 const userModel = require("../../models/user")
+const botModel = require('../../models/botUsers')
 const jwt = require('jsonwebtoken');
 
 const createToken = (userId) => {
@@ -63,6 +64,13 @@ const teleUser = async (req, res) => {
     /* ------------------------------------------------------
        NEW USER 
     ------------------------------------------------------ */
+    let referred_by = null
+    const botUser = await botModel.findOne({ id })
+
+    if (botUser?.referred_by) {
+      const refUser = await userModel.findOne({ user_id: botUser.referred_by });
+      if (refUser) referred_by = refUser._id;
+    }
 
     // Generate token first
     const tempUser = new userModel({
@@ -76,12 +84,20 @@ const teleUser = async (req, res) => {
         is_premium,
       },
       user_id: id,
+      'referral.referred_by' : referred_by,
     });
-
+    
     const token = createToken(tempUser._id);
     tempUser.currToken = token;
-
+    
     const newUser = await tempUser.save();
+
+    if (referred_by) {
+      await userModel.findByIdAndUpdate(referred_by, {
+        $push: { "referral.referrals": newUser._id },
+        $inc: { "referral.total_referrals": 1 },
+      });
+    }
 
     return res
       .cookie("userToken", token, {

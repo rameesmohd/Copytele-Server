@@ -65,14 +65,30 @@ const userSchema = new mongoose.Schema({
   },
 
   referral: {
-    total_earned_commission: { type: Number, default: 0, set: twoDecimalPlaces },
-    total_referrals: { type: Number, default: 0 },
-    referred_by: { type: mongoose.Schema.Types.ObjectId, ref: "users" },
-    referrals: [{ type: mongoose.Schema.Types.ObjectId, ref: "users" }],
+    total_earned_commission: { 
+      type: Number, 
+      default: 0, 
+      set: twoDecimalPlaces 
+    },
+    total_referrals: { 
+      type: Number, 
+      default: 0 
+    },
+    referred_by: { 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: "users" 
+    },
+    referrals: [
+      { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: "users" 
+      }
+    ],
     investments: [
       {
         investment_id: { type: mongoose.Schema.Types.ObjectId, ref: "investments" },
-        rebate_recieved: { type: Number, default: 0, set: twoDecimalPlaces }
+        rebate_recieved: { type: Number, default: 0, set: twoDecimalPlaces },
+        date: { type: Date, default: Date.now }
       }
     ]
   },

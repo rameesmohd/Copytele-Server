@@ -4,18 +4,28 @@ const { sendNewBotUserAlert } = require("./botAlerts");
 const saveUser = async (req, res) => {
   try {
     const payload = req.body;
+    const telegramId = payload.telegramId;
 
-    // Check if user already exists
-    const existingUser = await BotUser.findOne({ id: payload.telegramId });
+    const existingUser = await BotUser.findOne({ id: telegramId });
 
-    // Upsert user
-    await BotUser.findOneAndUpdate(
-      { id: payload.telegramId },
+    // Prevent self referral
+    if (payload.referred_by && payload.referred_by === String(telegramId)) {
+      payload.referred_by = null;
+    }
+
+    // if user already exists do not overwrite referral
+    if (existingUser && existingUser.referred_by) {
+      delete payload.referred_by;
+    }
+
+    // Upsert botUser
+    const updatedUser = await BotUser.findOneAndUpdate(
+      { id: telegramId },
       { $set: payload },
       { upsert: true, new: true }
     );
 
-    // Send alert only for new user
+    // Notify only for new bot user
     if (!existingUser) {
       await sendNewBotUserAlert(payload);
     }
@@ -27,5 +37,6 @@ const saveUser = async (req, res) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 module.exports = { saveUser };

@@ -9,6 +9,7 @@ const botUserSchema = new Schema(
     last_name: { type: String, default: null },
     photo_url: { type: String, default: null },
     is_premium: { type: Boolean, default: false },
+    referred_by:{ type: String, default: null },
   },
   { timestamps: true }
 );
