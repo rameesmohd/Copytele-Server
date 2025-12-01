@@ -291,83 +291,130 @@ const fetchWithdrawals=async(req,res)=>{
 }
 
 const getPendingKYCRequests = async (req, res) => {
-    try {
-      const pendingUsers = await userModel.find({ 
-        // is_kyc_verified: false,  
+  try {
+    const pendingUsers = await userModel.find(
+      { 
+        "kyc.is_verified": false,
         $or: [
-          { identify_proof_status: "submitted" },
-          { residential_proof_status: "submitted" },
-          { residential_proof_status: "verified" },
-          { identify_proof_status: "verified" },
+          { "kyc.identify_proof_status": "submitted" },
+          { "kyc.residential_proof_status": "submitted" },
+
+          { "kyc.identify_proof_status": "verified" },
+          { "kyc.residential_proof_status": "verified" },
         ]
-      }).select(
-        "first_name user_id country is_email_verified last_name email is_email_verified is_kyc_verified identify_proof_status residential_proof_status identify_proof residential_proof createdAt"
-      ).sort({createdAt : -1})
-      res.status(200).json({ success: true, result: pendingUsers });
-    } catch (error) {
-      res.status(500).json({ success: false, message: "Error fetching KYC requests", error });
-    }
+      },
+      {
+        first_name: 1,
+        last_name: 1,
+        email: 1,
+        user_id: 1,
+        country: 1,
+        "kyc.is_verified": 1,
+        "kyc.identify_proof_status": 1,
+        "kyc.residential_proof_status": 1,
+        "kyc.identify_proof": 1,
+        "kyc.residential_proof": 1,
+        createdAt: 1,
+        login_type : 1,
+        telegram : 1
+      }
+    )
+    .sort({ createdAt: -1 });
+
+    res.status(200).json({ success: true, result: pendingUsers });
+  } catch (error) {
+    console.error("Error fetching KYC requests:", error);
+    res.status(500).json({ success: false, message: "Error fetching KYC requests" });
+  }
 };
 
+
 const approveKycDocs = async (req, res) => {
-    try {
-        const { role, record_id, status } = req.body;
-
-        // Validate role first
-        if (role !== 'identify_proof' && role !== 'residential_proof') {
-            return res.status(400).json({ errMsg: "Invalid payloads!" });
-        }
-
-        const key = role === 'identify_proof' ? 'identify_proof_status' : 'residential_proof_status';
-        console.log(req.body);
-        
-        if (status === 'verified') {
-            await userModel.updateOne(
-                { _id: record_id }, 
-                { $set: { [key]: status } } // Wrapped in $set
-            );
-        }
-
-        if (status === 'unavailable') {
-            await userModel.updateOne(
-                { _id: record_id }, 
-                { 
-                    $set: { [key]: status },
-                    $inc: { kyc_step: -1 } // Correctly formatted
-                }
-            );
-        }
-
-        res.status(200).json({ success: true });
-
-    } catch (error) {
-        res.status(500).json({ success: false, message: "Error approving KYC docs", error });
+  try {
+    const { role, record_id, status } = req.body;
+    console.log( role, record_id, status);
+    
+    if (role !== "identify_proof" && role !== "residential_proof") {
+      return res.status(400).json({ success: false, message: "Invalid payload!" });
     }
+
+    const user = await userModel.findById(record_id)
+
+    const key =
+      role === "identify_proof"
+        ? "kyc.identify_proof_status"
+        : "kyc.residential_proof_status";
+
+    if (status === "verified" && user[key]!=status) {
+      await userModel.updateOne(
+        { _id: record_id },
+        { $set: { [key]: status } }
+      );
+    }
+
+    if (status === "unavailable" && user[key]!=status) {
+      await userModel.updateOne(
+        { _id: record_id },
+        {
+          $set: { [key]: status },
+          $inc: { "kyc.step": -1 }
+        }
+      );
+    }
+
+    return res.status(200).json({ success: true });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Error approving KYC docs",
+      error
+    });
+  }
 };
 
 const approveKyc = async (req, res) => {
-    try {
-        const { _id } = req.body;
-        console.log(req.body);
+  try {
+    const { _id } = req.body;
 
-        const user = await userModel.findById(_id); // Corrected findById
+    const user = await userModel.findById(_id);
 
-        if (!user) {
-            return res.status(404).json({ errMsg: "User not found" });
-        }
-        
-        if (user.is_email_verified && user.identify_proof_status === 'verified' && user.residential_proof_status === 'verified') {
-            await userModel.findByIdAndUpdate(_id, { is_kyc_verified: true ,kyc_step: 4});
-
-            return res.status(200).json({ msg: "Approved successfully" });
-        }
-
-        return res.status(400).json({ errMsg: "Not a valid KYC approval" });
-        
-    } catch (error) {
-        res.status(500).json({ success: false, message: "Error approving KYC docs", error });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
     }
+
+    // Validate both docs & email status
+    if (
+      user.kyc.is_email_verified &&
+      user.kyc.identify_proof_status === "verified" &&
+      user.kyc.residential_proof_status === "verified"
+    ) {
+      await userModel.findByIdAndUpdate(_id, {
+        $set: {
+          "kyc.is_verified": true,
+          "kyc.step": 4,
+        },
+      });
+
+      return res.status(200).json({ success: true, message: "KYC Approved successfully" });
+    }
+
+    return res.status(400).json({
+      success: false,
+      message: "Documents not fully verified for KYC approval",
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Error approving KYC",
+      error,
+    });
+  }
 };
+
 
 const handleWithdraw = async (req, res) => {
     try {
