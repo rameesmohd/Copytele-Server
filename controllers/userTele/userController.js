@@ -12,6 +12,7 @@ const {
 } = require("../../assets/html/verification");
 const { uploadToCloudinary } = require('../../config/cloudinary');
 const { sendKycRequestedAlert } = require('../bot/botAlerts');
+const rebateTransactionModel = require('../../models/rebateTx');
 
 const fetchUserWallet = async (req, res) => {
   try {
@@ -434,6 +435,40 @@ const handleKycProofSubmit = async (req, res) => {
   }
 };
 
+const fetchRebateTx = async (req, res) => {
+  try {
+    const user = req.user;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const [transactions, total] = await Promise.all([
+      rebateTransactionModel
+        .find({ user: user._id })
+        .populate({ path: "investment", select: "inv_id" })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      rebateTransactionModel.countDocuments({ user: user._id }),
+    ]);
+
+    const hasMore = page * limit < total;
+
+    res.status(200).json({
+      success: true,
+      result: transactions,
+      pagination: {
+        page,
+        limit,
+        total,
+        hasMore,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
 
 
 module.exports = {
@@ -443,5 +478,7 @@ module.exports = {
 
     updateUserDetails,
     handleEmailVerificationOtp,
-    handleKycProofSubmit
+    handleKycProofSubmit,
+
+    fetchRebateTx
 }

@@ -164,12 +164,15 @@ const getUserGrowthChart = async (req, res) => {
       .sort({ date: 1 })
       .lean();
 
+    const latestRollover = await fetchAndUseLatestRollover()
+
     return res.json({
       success: true,
       data: chart.map((c) => ({
         date: c.date,
         value: Number(c.value || 0),
       })),
+      rollover : latestRollover
     });
 
   } catch (err) {

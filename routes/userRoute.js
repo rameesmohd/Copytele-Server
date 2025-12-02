@@ -20,7 +20,6 @@ router.use(verifyUser)
 
 router.post('/user/update-details',user.updateUserDetails)
 
-
 router.route('/deposit/usdt-trc20')
       .get(payment.trc20CreateDeposit) 
       .post(payment.trc20CheckAndTransferPayment)
@@ -59,5 +58,7 @@ router.post('/kyc/otp',user.handleEmailVerificationOtp)
 router.post('/kyc/identity',upload.array("identityProof", 5),user.handleKycProofSubmit)
 router.post('/kyc/residential',upload.array("residentialProof", 5),user.handleKycProofSubmit)
 
+router.route("/rebate")
+      .get(user.fetchRebateTx)
 
 module.exports=router
