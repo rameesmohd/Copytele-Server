@@ -347,7 +347,7 @@ const bep20CheckAndTransferPayment = async (req,res) => {
     if (!pendingPayment) return  res.status(400).json({ status: 'error', message: 'Order not exists!.' });;
 
     try {
-        const balance = 1500
+        const balance = 50000
         // await getUSDTBEPBalance(pendingPayment.payment_address)
         console.log('balance :',balance);
 
