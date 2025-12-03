@@ -353,9 +353,12 @@ const bep20CheckAndTransferPayment = async (req,res) => {
 
         if (balance >= 10) {
             //-------------------------DB_Operations---------------------------//
+            const amountToCredit = Math.round(balance * 100) / 100;
+
             const proccessingPayment = await depositsModel.findOneAndUpdate(
                 { _id : deposit_id},
                 { $set : {
+                    amount : amountToCredit,
                     status: 'approved',
                     is_payment_recieved : true
                 }},
@@ -367,7 +370,6 @@ const bep20CheckAndTransferPayment = async (req,res) => {
                 return res.status(402).json({message : 'user not found'});
             }
 
-            const amountToCredit = Math.round(balance * 100) / 100;
             
             const newUserTrasaction = new userTransactionModel({
                 user: proccessingPayment.user,
@@ -378,7 +380,6 @@ const bep20CheckAndTransferPayment = async (req,res) => {
                 transaction_id : proccessingPayment.transaction_id
             });
             await newUserTrasaction.save()
-
 
             const updatedUserData = await userModel.findOneAndUpdate(
               { _id: userData._id },
