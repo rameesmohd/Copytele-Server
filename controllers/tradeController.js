@@ -266,41 +266,41 @@ const rollOverTradeDistribution = async (rollover_id) => {
     }
 
     // ------------------------------------------------------------
-    // USER PORTFOLIO GROWTH CHART
+    // USER PORTFOLIO RETURN GROWTH CHART (PERCENTAGE LIKE MANAGER)
     // ------------------------------------------------------------
     if (touchedUsers.size) {
       const userIds = Array.from(touchedUsers).map(
         (id) => new mongoose.Types.ObjectId(id)
       );
 
-      const userEquities = await investmentModel.aggregate([
+      const userStats = await investmentModel.aggregate([
         { $match: { user: { $in: userIds }, status: "active" } },
         {
           $group: {
             _id: "$user",
-            totalEquity: { $sum: { $ifNull: ["$total_equity", 0] } }
-          }
-        }
+            totalDeposit: { $sum: { $ifNull: ["$total_deposit", 0] } },
+            totalTradeProfit: { $sum: { $ifNull: ["$total_trade_profit", 0] } },
+          },
+        },
       ]).session(session);
 
-      const equityMap = Object.fromEntries(
-        userEquities.map((u) => [
-          String(u._id),
-          toTwoDecimals(u.totalEquity || 0)
-        ])
-      );
-
       const chartDate = dayjs().startOf("day").toDate();
-
       const userChartBulk = [];
 
-      for (const uid of userIds) {
-        const val = equityMap[String(uid)] ?? 0;
+      for (const u of userStats) {
+        const userId = u._id;
+        const deposit = Number(u.totalDeposit) || 0;
+        const tradeProfit = Number(u.totalTradeProfit) || 0;
+
+        let totalReturn = 0;
+        if (deposit > 0) {
+          totalReturn = toTwoDecimals((tradeProfit / deposit) * 100);
+        }
 
         userChartBulk.push({
           updateOne: {
-            filter: { user: uid, date: chartDate },
-            update: { $set: { value: val } },
+            filter: { user: userId, date: chartDate },
+            update: { $set: { value: totalReturn } }, // value now = % return
             upsert: true,
           },
         });
