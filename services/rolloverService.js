@@ -141,8 +141,8 @@ const fetchLatestCompletedRollover = async () => {
 
 // 15-minute testing (enable when needed)
 cron.schedule("*/15 * * * *", () => {
-  console.log("🧪 Running test 15min rollover");
   createRollover("15min");
+  console.log("🧪 Running test 15min rollover");
 });
 
 module.exports = {

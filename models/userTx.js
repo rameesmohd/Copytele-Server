@@ -25,7 +25,8 @@ const transactionSchema = new Schema({
           "USDT-TRC20",
           "USDT-BEP20",
           "USDT-ERC20",
-          "bank-transfer"
+          "bank-transfer",
+          "rebate-wallet"
         ],
         default: "main-wallet",
     },

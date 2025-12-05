@@ -60,5 +60,6 @@ router.post('/kyc/residential',upload.array("residentialProof", 5),user.handleKy
 
 router.route("/rebate")
       .get(user.fetchRebateTx)
+      .post(user.trasferRebateToWallet)
 
 module.exports=router

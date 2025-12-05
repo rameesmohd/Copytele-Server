@@ -1,4 +1,3 @@
-const UserTransactionModel = require('../../models/userTx')
 const InvestmentTransaction = require('../../models/investmentTx');
 const InvestmentTrades  = require('../../models/investmentTrades');
 const InvestmentModel = require('../../models/investment')
@@ -13,6 +12,8 @@ const {
 const { uploadToCloudinary } = require('../../config/cloudinary');
 const { sendKycRequestedAlert } = require('../bot/botAlerts');
 const rebateTransactionModel = require('../../models/rebateTx');
+const UserTransaction = require('../../models/userTx');
+const { default: mongoose } = require('mongoose');
 
 const fetchUserWallet = async (req, res) => {
   try {
@@ -27,7 +28,7 @@ const fetchUserWallet = async (req, res) => {
     /* ------------------------------
        CALCULATE TOTAL DEPOSITED 
     -------------------------------*/
-    const depositedAgg = await UserTransactionModel.aggregate([
+    const depositedAgg = await UserTransaction.aggregate([
       { $match: { user: user._id, type: "deposit", status: "completed" } },
       { $group: { _id: null, total: { $sum: "$amount" } } },
     ]);
@@ -37,7 +38,7 @@ const fetchUserWallet = async (req, res) => {
     /* ------------------------------
        CALCULATE TOTAL WITHDRAWN 
     -------------------------------*/
-    const withdrawnAgg = await UserTransactionModel.aggregate([
+    const withdrawnAgg = await UserTransaction.aggregate([
       { $match: { user: user._id, type: "withdrawal", status: "completed" } },
       { $group: { _id: null, total: { $sum: "$amount" } } },
     ]);
@@ -47,7 +48,7 @@ const fetchUserWallet = async (req, res) => {
     /* ------------------------------
          FETCH TRANSACTIONS
     -------------------------------*/
-    const transactions = await UserTransactionModel
+    const transactions = await UserTransaction
       .find({ user: user._id })
       .sort({ createdAt: -1 }) // newest first (MT5 style)
       .skip(skip)
@@ -57,7 +58,7 @@ const fetchUserWallet = async (req, res) => {
     /* ------------------------------
          TOTAL COUNT FOR PAGINATION
     -------------------------------*/
-    const totalCount = await UserTransactionModel.countDocuments({
+    const totalCount = await UserTransaction.countDocuments({
       user: user._id,
     });
 
@@ -102,10 +103,10 @@ const fetchUserWalletTransactions = async (req, res) => {
     };
 
     // Get total count before limit/skip
-    const totalCount = await UserTransactionModel.countDocuments(query);
+    const totalCount = await UserTransaction.countDocuments(query);
 
     // Fetch paginated results
-    const transactions = await UserTransactionModel
+    const transactions = await UserTransaction
       .find(query)
       .limit(limitNum)
       .skip(skipNum)
@@ -470,6 +471,73 @@ const fetchRebateTx = async (req, res) => {
   }
 };
 
+const trasferRebateToWallet = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const user = await UserModel.findById(req.user._id).session(session);
+    if (!user) return res.status(404).json({ success: false, msg: "User not found" });
+
+    const rebateBalance = Number(user.wallets.rebate || 0);
+    const MIN_TRANSFER = 100;
+
+    if (rebateBalance < MIN_TRANSFER) {
+      await session.abortTransaction();
+      return res.status(400).json({
+        success: false,
+        msg: `Minimum $${MIN_TRANSFER} rebate balance required.`,
+      });
+    }
+
+    const newMainBalance = Number((user.wallets.main + rebateBalance).toFixed(2));
+
+    await UserModel.updateOne(
+      { _id: user._id },
+      {
+        $set: {
+          "wallets.main": newMainBalance,
+          "wallets.rebate": 0,
+        },
+      },
+      { session }
+    );
+
+    await UserTransaction.create(
+      [
+        {
+          user: user._id,
+          type: "transfer",
+          status: "completed",
+          payment_mode: "rebate-wallet",
+          amount: rebateBalance,
+          from: `REBATE_${user.wallets.rebate_id}`,
+          to: `WALL_${user.wallets.main_id}`,
+          description: "Rebate transferred",
+          transaction_id: "TX-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
+        },
+      ],
+      { session }
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return res.json({
+      success: true,
+      msg: "Rebate transferred successfully",
+      result: await UserModel.findById(user._id),
+    });
+
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error("Rebate Transfer Error:", error);
+    return res.status(500).json({ success: false, msg: "Server error" });
+  }
+};
+
+
 
 module.exports = {
     fetchUserWallet,
@@ -480,5 +548,6 @@ module.exports = {
     handleEmailVerificationOtp,
     handleKycProofSubmit,
 
-    fetchRebateTx
+    fetchRebateTx,
+    trasferRebateToWallet
 }

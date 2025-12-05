@@ -186,20 +186,26 @@ const rollOverTradeDistribution = async (rollover_id) => {
       }
 
       // ------------------------------------------------------------
-      // MANAGER GROWTH CHART
+      // MANAGER GROWTH CHART (UPDATED)
       // ------------------------------------------------------------
       const chartDate = dayjs(trade.close_time).startOf("day").toDate();
-      const lastEquity = Number(manager.total_funds) || 1;
-      const dailyPercent = toTwoDecimals((tradeProfit / lastEquity) * 100);
+      const previousEquity = Number(manager.total_funds) - tradeProfit || 1;
+      const newEquity = Number(manager.total_funds) || 1;
 
+      // Calculate return based on equity change
+      const dailyReturn = toTwoDecimals((newEquity / previousEquity - 1) * 100);
+
+      // Check if entry exists for the same day
       const existingChart = await managerGrowthChart
         .findOne({ manager: manager._id, date: chartDate })
         .session(session);
 
       if (existingChart) {
-        const newValue =
-          (1 + existingChart.value / 100) * (1 + dailyPercent / 100) - 1;
-        existingChart.value = toTwoDecimals(newValue * 100);
+        // Compound calculation: growth = (1+a)(1+b)-1
+        const compounded =
+          (1 + existingChart.value / 100) * (1 + dailyReturn / 100) - 1;
+
+        existingChart.value = toTwoDecimals(compounded * 100);
         await existingChart.save({ session });
       } else {
         await managerGrowthChart.create(
@@ -207,7 +213,7 @@ const rollOverTradeDistribution = async (rollover_id) => {
             {
               manager: manager._id,
               date: chartDate,
-              value: dailyPercent,
+              value: dailyReturn, // store percent value
             },
           ],
           { session }
@@ -349,16 +355,30 @@ const updateTradeToManager=async(req,res)=>{
   }
 }
 
-const deleteTradeToManager=async(req,res)=>{
+const deleteTradeToManager = async (req, res) => {
   try {
     const { tradeId } = req.query;
-    await managerTradeModel.findByIdAndDelete(tradeId);
+
+    const deleted = await managerTradeModel.findOneAndDelete({
+      _id: tradeId,
+      is_distributed: false
+    });
+
+    if (!deleted) {
+      return res.status(400).json({
+        success: false,
+        msg: "Cannot delete. Trade already distributed."
+      });
+    }
+
     res.json({ success: true, msg: "Trade deleted" });
+
   } catch (error) {
-    console.log("Add Trade Error:", error);
-    res.status(500).json({ success: false, msg: "server side error" });
+    console.log("Delete Trade Error:", error);
+    res.status(500).json({ success: false, msg: "Server error" });
   }
-}
+};
+
 
 module.exports = { 
     addTradeToManager,
