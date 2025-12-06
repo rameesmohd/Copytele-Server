@@ -57,6 +57,7 @@ const corsOptions = {
   credentials: true,
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   optionsSuccessStatus: 204,
+  maxAge: 86400
 };
 
 app.use(cors(corsOptions)); 
