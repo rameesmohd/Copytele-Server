@@ -91,5 +91,5 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(process.env.PORT, () => {
-    console.log(`Example app listening at http://localhost:${process.env.PORT}`);
+    console.log(`app listening at http://localhost:${process.env.PORT}`);
 })
