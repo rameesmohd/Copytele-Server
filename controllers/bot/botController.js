@@ -1,3 +1,4 @@
+const OnboardingMessage = require('../../models/botMessage/OnboardingMessage');
 const BotUser = require('../../models/botUsers');
 const { sendNewBotUserAlert } = require("./botAlerts");
 
@@ -38,5 +39,15 @@ const saveUser = async (req, res) => {
   }
 };
 
+const getOnboardMessages = async (req, res) => {
+  try {
+    const data = await OnboardingMessage.find().sort({ order: 1 });
+    res.json(data);
+  } catch (err) {
+    console.log(err);
+    
+    res.status(500).json({ error: err.message });
+  }
+}
 
-module.exports = { saveUser };
+module.exports = { saveUser,getOnboardMessages };

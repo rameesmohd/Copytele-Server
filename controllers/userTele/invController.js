@@ -1,9 +1,10 @@
 const investmentModel = require('../../models/investment');
-const managerModel = require('../../models/manager');
-const userModel = require('../../models/user')
+const ManagerModel = require('../../models/manager');
+const UserModel = require('../../models/user')
 const { default: mongoose } = require('mongoose');
 const InvestmentTransaction = require('../../models/investmentTx');
 const UserTransaction = require('../../models/userTx');
+const BotUserModel = require('../../models/botUsers')
 
 const makeInvestment = async (req, res) => {
   const session = await mongoose.startSession();
@@ -21,8 +22,8 @@ const makeInvestment = async (req, res) => {
 
       // Fetch user & manager
       const [user, manager] = await Promise.all([
-        userModel.findById(userId).session(session),
-        managerModel.findById(managerId).session(session),
+        UserModel.findById(userId).session(session),
+        ManagerModel.findById(managerId).session(session),
       ]);
 
       if (!user || !manager) throw new Error("User or manager not found");
@@ -39,7 +40,7 @@ const makeInvestment = async (req, res) => {
         );
 
       // Deduct from wallet
-      await userModel.findByIdAndUpdate(
+      await UserModel.findByIdAndUpdate(
         userId,
         { $inc: { "wallets.main": -amount } },
         { session }
@@ -52,12 +53,19 @@ const makeInvestment = async (req, res) => {
       let investment = await investmentModel.findOne({user :user._id ,manager : manager._id })
       
       if(!investment){
+          if (user?.login_type === "telegram") {
+            await BotUserModel.findOneAndUpdate(
+              { id: user.telegram?.id },
+              { $set: { is_invested: true } },
+              { session, new: true }
+          );}
+
           // Find inviter
           let inviter = null;
           if (ref) {
-            inviter = await userModel.findOne({ user_id: ref }).session(session);
+            inviter = await UserModel.findOne({ user_id: ref }).session(session);
           } else if (user.referral?.referred_by) {
-            inviter = await userModel.findById(user.referral.referred_by).session(session);
+            inviter = await UserModel.findById(user.referral.referred_by).session(session);
           }
           // Create Investment Entry
           const [newInvestment] = await investmentModel.create(
@@ -92,7 +100,7 @@ const makeInvestment = async (req, res) => {
 
           // Referral tracking
           if (inviter && inviter._id.toString() !== user._id.toString()) {
-            await userModel.findByIdAndUpdate(
+            await UserModel.findByIdAndUpdate(
               inviter._id,
               {
                 $push: {
@@ -147,7 +155,7 @@ const makeInvestment = async (req, res) => {
       );
 
       // Increase manager investor count
-      await managerModel.findByIdAndUpdate(
+      await ManagerModel.findByIdAndUpdate(
         managerId,
         { $inc: { total_investors: 1 } },
         { session }
@@ -234,7 +242,7 @@ const getWithdrawSummary= async(req,res)=> {
   if (!investment) throw new Error("Investment not found");
 
   // Optionally load user if you need wallet ids etc
-  const user = await userModel.findById(investment.user).lean().catch(() => null);
+  const user = await UserModel.findById(investment.user).lean().catch(() => null);
 
   // Basic fields (defensive)
   const deposits = Array.isArray(investment.deposits) ? investment.deposits : [];
@@ -438,7 +446,7 @@ const handleInvestmentWithdrawal = async (req, res) => {
     if (!investment)
       return res.status(400).json({ errMsg: "Investment not found." });
     
-    const user = await userModel.findById(investment.user);
+    const user = await UserModel.findById(investment.user);
 
     if (!user)
       return res.status(400).json({ errMsg: "User not found." });
@@ -540,7 +548,7 @@ const approveWithdrawalTransaction = async (withdrawTransactionId, rollover_id) 
       return false;
     }
 
-    const userData = await userModel.findById(withdrawTx.user).session(session);
+    const userData = await UserModel.findById(withdrawTx.user).session(session);
     if (!userData) {
       console.log("User not found");
       await session.abortTransaction();
@@ -586,7 +594,7 @@ const approveWithdrawalTransaction = async (withdrawTransactionId, rollover_id) 
      * ----------------------------------------- */
     userData.wallets.main += finalAmount;
 
-    const manager = await managerModel.find({_id : investment.manager})
+    const manager = await ManagerModel.find({_id : investment.manager})
     /** -----------------------------------------
      * Create User Transaction Record
      * ----------------------------------------- */

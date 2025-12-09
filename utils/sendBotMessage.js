@@ -23,9 +23,9 @@ const processQueue = async () => {
 
 export const sendMessageSafe = (method, payload) => {
   queue.push({ method, payload });
-  console.log("FINAL PAYLOAD:", JSON.stringify(payload, null, 2));
+  // console.log("FINAL PAYLOAD:", JSON.stringify(payload, null, 2));
   if (method === "sendVideo" && !payload.video) {
-    console.log("❌ Skipping sendVideo: no video provided");
+    // console.log("❌ Skipping sendVideo: no video provided");
     return;
   }
   

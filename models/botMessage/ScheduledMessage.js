@@ -6,14 +6,38 @@ const scheduledMessageSchema = new mongoose.Schema(
     caption: { type: String },
     fileId: { type: String },
     buttons: [{ text: String, url: String }],
-    sendAt: { type: Date, required: true }, // exact time to send
-    audience: { type: String, enum: ["all", "new", "single"], default: "all" },
+
+    // when to send next
+    sendAt: { type: Date, required: true },
+
+    // recurrence setup
+    scheduleType: {
+      type: String,
+      enum: ["once", "daily", "weekly", "every_n_days"],
+      default: "once",
+    },
+    nDays: { type: Number, default: null }, // used only for every_n_days
+
+    // audience filters
+    audience: {
+      type: String,
+      enum: [
+        "all",
+        "single",
+        "not_opened_webapp",
+        "not_invested",
+        "not_joined_channel",
+        "invested",
+      ],
+      default: "all",
+    },
     singleUserId: { type: String, default: null },
-    isActive: { type: Boolean, default: false },
-    isSend : { type: Boolean,default : false},
-    totalSent : { type : Number , default : 0}
+
+    isActive: { type: Boolean, default: true },
+    isSend: { type: Boolean, default: false }, // only meaningful for 'once'
+    sentCount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model("scheduledMessage", scheduledMessageSchema);
+module.exports = mongoose.model("ScheduledMessage", scheduledMessageSchema);

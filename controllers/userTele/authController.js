@@ -35,6 +35,13 @@ const teleUser = async (req, res) => {
     let user = await userModel.findOne({ user_id: id });
     // console.log(user);
     
+    const botUser = await botModel.findOne({id})
+
+    // HANDLE MESSAGE TO BOT SCHEDULE
+    if(botUser){
+        await botModel.findOneAndUpdate({id},{is_opened_webapp : true})
+    }
+
     /* ------------------------------------------------------
        EXISTING USER 
     ------------------------------------------------------ */
@@ -65,8 +72,6 @@ const teleUser = async (req, res) => {
        NEW USER 
     ------------------------------------------------------ */
     let referred_by = null
-    const botUser = await botModel.findOne({ id })
-
     if (botUser?.referred_by) {
       const refUser = await userModel.findOne({ user_id: botUser.referred_by });
       if (refUser) referred_by = refUser._id;
@@ -128,29 +133,3 @@ module.exports = {
     teleUser,
     userlog
 }
-
-
-// 🧾 Step 5: (Optional) Verify the data server-side
-
-// If you want to verify authenticity of the user (prevent spoofing),
-// Telegram provides an HMAC hash in initData that you can verify with your bot token.
-
-// In your backend (Node.js example):
-
-// import crypto from "crypto";
-
-// export function verifyTelegramAuth(initData, botToken) {
-//   const urlParams = new URLSearchParams(initData);
-//   const hash = urlParams.get("hash");
-//   urlParams.delete("hash");
-
-//   const dataCheckString = [...urlParams.entries()]
-//     .sort(([a], [b]) => a.localeCompare(b))
-//     .map(([k, v]) => `${k}=${v}`)
-//     .join("\n");
-
-//   const secretKey = crypto.createHmac("sha256", "WebAppData").update(botToken).digest();
-//   const computedHash = crypto.createHmac("sha256", secretKey).update(dataCheckString).digest("hex");
-
-//   return computedHash === hash;
-// }

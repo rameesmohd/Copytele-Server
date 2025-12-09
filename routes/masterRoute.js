@@ -13,8 +13,6 @@ const {
         approveKyc,
         handleWithdraw,
         addToWallet,
-        fetchHelpRequests,
-        changeHelpRequestStatus,
         changeUserEmail,
         sendEmail,
         masterLogout
@@ -22,13 +20,21 @@ const {
 const { fetchAddressBalance } = require('../controllers/userTele/paymentController')
 const {verifyToken} = require('../middlewares/masterAuth')
 const { 
-    createMessage,
-    listMessages,
-    toggleMessage, 
-    updateMessage, 
-    deleteMessage 
-} = require('../controllers/bot/schedulerController')
+    createScheduledMessage,
+    getScheduledMessages,
+    toggleScheduledMessage, 
+    updateScheduledMessage, 
+    deleteScheduledMessage,
+} = require('../controllers/master/schedulerController')
 
+const { 
+    createOnboardMessage,
+    getOnboardMessages,
+    toggleOnboardMessage, 
+    updateOnboardMessage, 
+    deleteOnboardMessage,
+    reorderOnboardMessage
+} = require('../controllers/master/onboardController')
 
 router.post('/login',masterLogin)
 
@@ -64,11 +70,18 @@ router.post('/add-to-wallet',addToWallet)
 router.post('/send-email',sendEmail)
 router.post('/change-email',changeUserEmail)
 
-router.get('/schedule/list',listMessages)
-router.post('/schedule/create',createMessage)
-router.patch('/schedule/toggle/:id',toggleMessage)
-router.patch("/schedule/update/:id", updateMessage)
-router.patch("/schedule/delete/:id", deleteMessage)
+router.get('/schedule/list',getScheduledMessages)
+router.post('/schedule/create',createScheduledMessage)
+router.patch('/schedule/toggle/:id',toggleScheduledMessage)
+router.patch("/schedule/update/:id", updateScheduledMessage)
+router.patch("/schedule/delete/:id", deleteScheduledMessage)
+
+router.get('/onboard/list',getOnboardMessages)
+router.post('/onboard/create',createOnboardMessage)
+router.patch('/onboard/toggle/:id',toggleOnboardMessage)
+router.patch("/onboard/update/:id", updateOnboardMessage)
+router.patch("/onboard/delete/:id", deleteOnboardMessage)
+router.patch("/onboard/reorder", reorderOnboardMessage)
 
 router.get('/logout',masterLogout)
 

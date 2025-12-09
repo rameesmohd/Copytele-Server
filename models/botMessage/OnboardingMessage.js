@@ -1,14 +1,17 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
-const onboardingMessageSchema = new mongoose.Schema({
-  telegramId: { type: String, required: true },
-  type: { type: String, enum: ["text", "audio", "video", "image"], required: true },
-  content: { type: String, required: true },
-  caption: { type: String, default: "" },
-  delayMinutes: { type: Number, required: true },
-  buttons: { type: Array, default: [] },
-  scheduledAt: { type: Date, required: true },
-  sent: { type: Boolean, default: false }
-}, { timestamps: true });
+const onboardingMessageSchema = new mongoose.Schema(
+  {
+    type: { type: String, enum: ["text", "audio", "video", "image"], required: true },
+    caption: { type: String },
+    fileId: { type: String },
+    buttons: [{ text: String, url: String }],
+    delayMinutes: { type: Number, default : 0 }, 
+    isActive: { type: Boolean, default: false },
+    sentCount : { type : Number , default : 0},
+    order : { type : Number ,default :0 }
+  },
+  { timestamps: true }
+);
 
-export default mongoose.model("OnboardingMessage", onboardingMessageSchema);
+module.exports = mongoose.model("OnboardingMessage", onboardingMessageSchema);
