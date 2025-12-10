@@ -5,7 +5,12 @@ const { sendMessageSafe } =require("../utils/sendBotMessage.js");
 const getNextSendAt = require('../utils/getNextSendAt.js')
 const getAudienceUsers = require('../utils/getAudience.js')
 
-cron.schedule("*/20 * * * * *", async () => {
+//-----------TEST 20 Sec--------------------
+// cron.schedule("*/20 * * * * *", async () => {
+
+// ----------HOURLY-------------------------
+cron.schedule("0 0 * * * *", async () => {
+
   console.log("⏱ Checking scheduled messages...");
   const now = new Date();
 

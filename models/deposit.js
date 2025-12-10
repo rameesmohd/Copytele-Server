@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const crypto = require("crypto")
 const { Schema } = mongoose;
 
 const depositSchema = new Schema({
@@ -45,7 +46,7 @@ const depositSchema = new Schema({
     },
     transaction_id: { 
       type: String, 
-      default: () => Math.random().toString(36).substring(2, 10).toUpperCase() 
+      default: () => crypto.randomUUID().replace(/-/g, "").slice(0, 12).toUpperCase()
     },
     related_transaction: { 
       type: Schema.Types.ObjectId, 

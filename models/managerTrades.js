@@ -6,7 +6,8 @@ const tradeSchema = new Schema(
       manager: { 
         type: Schema.Types.ObjectId, 
         ref: 'manager', 
-        required: true 
+        required: true,
+        index: true
       },
       symbol : { 
         type: String, 

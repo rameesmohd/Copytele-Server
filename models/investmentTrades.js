@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const crypto = require("crypto")
 const { Schema } = mongoose;
 
 const tradeSchema = new Schema(
@@ -6,7 +7,9 @@ const tradeSchema = new Schema(
       manager: { 
         type: Schema.Types.ObjectId, 
         ref: 'manager', 
-        required: true },
+        required: true, 
+        index : true
+      },
       user: {
         type: Schema.Types.ObjectId,
         ref: "users",
@@ -16,7 +19,8 @@ const tradeSchema = new Schema(
       investment : {
         type: Schema.Types.ObjectId, 
         ref: 'investments', 
-        required: true 
+        required: true,
+        index: true
       },
       manager_trade :  { 
         type: Schema.Types.ObjectId, 
@@ -29,42 +33,52 @@ const tradeSchema = new Schema(
       },
       symbol : { 
         type: String, 
-        required: true },
+        required: true 
+      },
       manager_volume : {
         type :String ,
-        required : true},
+        required : true
+      },
       open_price: { 
         type: String, 
-        required: true }, 
+        required: true 
+      }, 
       close_price: { 
         type: String, 
-        required: true }, 
+        required: true,
+        index: true
+      }, 
       swap : {
         type : String, 
-        default : 0},
+        default : 0
+      },
       open_time: { 
-        type: String, 
-        required: true }, 
+        type: Date, 
+        required: true 
+      }, 
       close_time: { 
-        type: String, 
-        required: true }, 
+        type: Date, 
+        required: true 
+      },
       manager_profit: { 
         type: Number, 
-        required: true }, 
+        required: true 
+      }, 
       rollover_id : { 
         type: Schema.Types.ObjectId, 
         ref: 'rollover' 
       },
       txid: { 
         type: String, 
-        default: () => Math.random().toString(36).substring(2, 10).toUpperCase() 
+        default: () => crypto.randomUUID().replace(/-/g, "").slice(0, 12).toUpperCase()
       },
       investor_profit : { 
         type: Number, 
-        required: true }, 
+        required: true 
+      }, 
     },
     {
-      timestamps: true, // Automatically manages createdAt and updatedAt fields
+      timestamps: true,
     }
   );
   
