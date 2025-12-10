@@ -4,13 +4,18 @@ const ScheduledMessage =require("../models/botMessage/ScheduledMessage.js");
 const { sendMessageSafe } =require("../utils/sendBotMessage.js");
 const getNextSendAt = require('../utils/getNextSendAt.js')
 const getAudienceUsers = require('../utils/getAudience.js')
-
+let isBroadcastRunning = false;
 //-----------TEST 20 Sec--------------------
 // cron.schedule("*/20 * * * * *", async () => {
 
 // ----------HOURLY-------------------------
 cron.schedule("0 0 * * * *", async () => {
+  if (isBroadcastRunning) {
+      console.log("⏳ Previous broadcast still running, skipping this run");
+      return;
+  }
 
+  isBroadcastRunning = true;
   console.log("⏱ Checking scheduled messages...");
   const now = new Date();
 
@@ -138,4 +143,5 @@ cron.schedule("0 0 * * * *", async () => {
 
     await msg.save();
   }
+  isBroadcastRunning = false;
 });

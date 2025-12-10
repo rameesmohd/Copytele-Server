@@ -25,6 +25,7 @@ const {
     toggleScheduledMessage, 
     updateScheduledMessage, 
     deleteScheduledMessage,
+    testScheduledMessage,
 } = require('../controllers/master/schedulerController')
 
 const { 
@@ -33,7 +34,8 @@ const {
     toggleOnboardMessage, 
     updateOnboardMessage, 
     deleteOnboardMessage,
-    reorderOnboardMessage
+    reorderOnboardMessage,
+    testOnboardMessage
 } = require('../controllers/master/onboardController')
 
 router.post('/login',masterLogin)
@@ -75,6 +77,7 @@ router.post('/schedule/create',createScheduledMessage)
 router.patch('/schedule/toggle/:id',toggleScheduledMessage)
 router.patch("/schedule/update/:id", updateScheduledMessage)
 router.patch("/schedule/delete/:id", deleteScheduledMessage)
+router.post("/schedule/test/:id",testScheduledMessage)
 
 router.get('/onboard/list',getOnboardMessages)
 router.post('/onboard/create',createOnboardMessage)
@@ -82,6 +85,7 @@ router.patch('/onboard/toggle/:id',toggleOnboardMessage)
 router.patch("/onboard/update/:id", updateOnboardMessage)
 router.patch("/onboard/delete/:id", deleteOnboardMessage)
 router.patch("/onboard/reorder", reorderOnboardMessage)
+router.post("/onboard/test/:id", testOnboardMessage)
 
 router.get('/logout',masterLogout)
 

@@ -1,4 +1,5 @@
 const ScheduledMessage = require("../../models/botMessage/ScheduledMessage");
+const { sendTestMessage } = require("../../utils/sendTestMessage");
 
 // ======================================================================
 // 📢 Broadcast Message Controller
@@ -82,6 +83,21 @@ const reorderScheduledMessages = async (req, res) => {
   }
 };
 
+const testScheduledMessage=async(req,res)=>{
+   try {
+    const msg = await ScheduledMessage.findById(req.params.id);
+
+    if (!msg) return res.status(404).json({ success: false, message: "Message not found" });
+
+    await sendTestMessage(msg);
+
+    return res.json({ success: true, message: "Test message sent" });
+  } catch (err) {
+    console.error("Test message error:", err);
+    return res.status(500).json({ success: false });
+  }
+}
+
 // ======================================================================
 // EXPORTS
 // ======================================================================
@@ -92,4 +108,5 @@ module.exports = {
   updateScheduledMessage,
   deleteScheduledMessage,
   reorderScheduledMessages,
+  testScheduledMessage
 };

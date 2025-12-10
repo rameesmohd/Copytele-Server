@@ -1,4 +1,5 @@
 const OnboardingMessage = require("../../models/botMessage/OnboardingMessage");
+const { sendTestMessage } = require("../../utils/sendTestMessage");
 
 const createOnboardMessage = async (req, res) => {
   try {
@@ -74,11 +75,27 @@ const reorderOnboardMessage= async (req, res) => {
   }
 }
 
+const testOnboardMessage=async(req,res)=>{
+  try {
+     const msg = await OnboardingMessage.findById(req.params.id);
+ 
+     if (!msg) return res.status(404).json({ success: false, message: "Message not found" });
+ 
+     await sendTestMessage(msg);
+ 
+     return res.json({ success: true, message: "Test message sent" });
+   } catch (err) {
+     console.error("Test message error:", err);
+     return res.status(500).json({ success: false });
+   }
+}
+
 module.exports = {
     createOnboardMessage,
     reorderOnboardMessage,
     toggleOnboardMessage,
     deleteOnboardMessage,
     updateOnboardMessage,
-    getOnboardMessages
+    getOnboardMessages,
+    testOnboardMessage
 }
