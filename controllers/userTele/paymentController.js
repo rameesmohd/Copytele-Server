@@ -134,12 +134,11 @@ const trc20CheckAndTransferPayment = async (req, res) => {
       .balanceOf(pendingPayment.payment_address)
       .call();
 
-    const balance = 25000
-    // parseFloat(tronWebInstance.fromSun(usdtBalance.toString()));
+    const balance = parseFloat(tronWebInstance.fromSun(usdtBalance.toString()));
     console.log("TRC20 balance:", balance);
 
     // If user has enough balance
-    if (balance <= 10) {
+    if (balance >= 50) {
 
       // Mark deposit as approved
       const processingPayment = await depositsModel.findOneAndUpdate(
@@ -348,11 +347,10 @@ const bep20CheckAndTransferPayment = async (req,res) => {
     if (!pendingPayment) return  res.status(400).json({ status: 'error', message: 'Order not exists!.' });;
 
     try {
-        const balance = 50000
-        // await getUSDTBEPBalance(pendingPayment.payment_address)
+        const balance = await getUSDTBEPBalance(pendingPayment.payment_address)
         console.log('balance :',balance);
 
-        if (balance <= 10) {
+        if (balance >= 20) {
             //-------------------------DB_Operations---------------------------//
             const amountToCredit = Math.round(balance * 100) / 100;
 

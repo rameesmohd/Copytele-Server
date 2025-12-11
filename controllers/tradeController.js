@@ -20,7 +20,11 @@ const addTradeToManager = async (req, res) => {
       open_time,
       symbol,
       type,
-      swap
+      swap,
+      take_profit,
+      stop_loss,
+      tp_hit,
+      sl_hit
     } = formData;
 
     if (!formData || !manager_id) {
@@ -41,6 +45,10 @@ const addTradeToManager = async (req, res) => {
       close_time: new Date(close_time),
       manager_profit: Number(manager_profit),
       swap: formatNum(swap), 
+      take_profit,
+      stop_loss,
+      tp_hit,
+      sl_hit
     });
 
     await newTrade.save();
@@ -182,6 +190,10 @@ const rollOverTradeDistribution = async (rollover_id) => {
           manager_profit: investorProfit,
           investor_profit: investorProfit,
           rollover_id,
+          take_profit:trade.take_profit,
+          stop_loss:trade.stop_loss,
+          tp_hit:trade.tp_hit,
+          sl_hit:trade.sl_hit
         });
       }
 
@@ -344,38 +356,95 @@ const rollOverTradeDistribution = async (rollover_id) => {
   }
 };
 
-const updateTradeToManager=async(req,res)=>{
+const updateTradeToManager = async (req, res) => {
   try {
     const { trade_id, formData } = req.body;
-    await managerTradeModel.findByIdAndUpdate(trade_id, formData);
-    res.json({ success: true, msg: "Trade updated" });
+
+    if (!trade_id || !formData) {
+      return res.status(400).json({ success: false, msg: "Invalid request" });
+    }
+
+    // Extract only allowed fields
+    const update = {
+      symbol: formData.symbol,
+      type: formData.type,
+      manager_volume: formData.manager_volume,
+      open_price: formData.open_price,
+      close_price: formData.close_price,
+      open_time: formData.open_time ? new Date(formData.open_time) : undefined,
+      close_time: formData.close_time ? new Date(formData.close_time) : undefined,
+      manager_profit: Number(formData.manager_profit || 0),
+      swap: formData.swap,
+      take_profit: formData.take_profit ?? null,
+      stop_loss: formData.stop_loss ?? null,
+      tp_hit: formData.tp_hit ?? false,
+      sl_hit: formData.sl_hit ?? false,
+    };
+
+    // Remove undefined values to avoid overwriting
+    Object.keys(update).forEach(
+      (key) => update[key] === undefined && delete update[key]
+    );
+
+    const updated = await managerTradeModel.findOneAndUpdate(
+      { _id: trade_id, is_distributed: false },
+      { $set: update },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(400).json({
+        success: false,
+        msg: "Trade not found or already distributed",
+      });
+    }
+
+    return res.json({
+      success: true,
+      msg: "Trade updated successfully",
+      result: updated,
+    });
   } catch (error) {
-    console.log("Add Trade Error:", error);
+    console.log("Update Trade Error:", error);
     res.status(500).json({ success: false, msg: "server side error" });
   }
-}
+};
 
 const deleteTradeToManager = async (req, res) => {
   try {
     const { tradeId } = req.query;
 
+    if (!tradeId) {
+      return res.status(400).json({
+        success: false,
+        msg: "Trade ID is required",
+      });
+    }
+
     const deleted = await managerTradeModel.findOneAndDelete({
       _id: tradeId,
-      is_distributed: false
+      is_distributed: false, // ❗ prevent deleting if distributed
     });
 
     if (!deleted) {
       return res.status(400).json({
         success: false,
-        msg: "Cannot delete. Trade already distributed."
+        msg: "Cannot delete. Trade not found or already distributed.",
       });
     }
 
-    res.json({ success: true, msg: "Trade deleted" });
+    return res.json({
+      success: true,
+      msg: "Trade deleted successfully",
+      result: deleted,
+    });
 
   } catch (error) {
-    console.log("Delete Trade Error:", error);
-    res.status(500).json({ success: false, msg: "Server error" });
+    console.log("❌ Delete Trade Error:", error);
+    return res.status(500).json({
+      success: false,
+      msg: "Server error",
+    });
   }
 };
 

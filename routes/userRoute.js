@@ -32,10 +32,10 @@ router.post('/withdraw/crypto',payment.withdrawFromMainWallet)
 
 router.get('/wallet',user.fetchUserWallet)
 
-router.get('/transactions',user.fetchUserWalletTransactions)
+router.get('/transactions/user',user.fetchUserWalletTransactions)
 
 router.get("/account-history/user",user.fetchAccountData)
-      
+
 router.post('/invest',investment.makeInvestment)
 
 router.get('/porfolio',investment.fetchInvestment)
@@ -48,6 +48,7 @@ router.post('/portfolio/history',investment.fetchInvTransactions)
 
 router.get('/manager-portfolio',manager.fetchManager)
 router.get("/account-history/manager",manager.fetchAccountData)
+router.get('/transactions/manager',manager.fetchManagerTransactions)
 
 router.get("/chart/daily", chart.getDailyChart);
 router.get("/chart/weekly", chart.getWeeklyChart);

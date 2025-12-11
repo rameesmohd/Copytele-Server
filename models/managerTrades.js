@@ -49,13 +49,36 @@ const tradeSchema = new Schema(
       is_distributed : {
         type : Boolean,
         default : false
-      }  
+      },
+      // ✅ Take Profit & Stop Loss
+      take_profit: {
+        type: String,
+        default: null
+      },
+      stop_loss: {
+        type: String,
+        default: null
+      },
+      // ✅ Flags to track if TP or SL was hit
+      tp_hit: {
+        type: Boolean,
+        default: false
+      },
+      sl_hit: {
+        type: Boolean,
+        default: false
+      },
     },
     {
       timestamps: true, 
     }
 );
   
+// Add index for better query performance
+tradeSchema.index({ manager: 1, createdAt: -1 });
+tradeSchema.index({ manager: 1, close_time: -1 });
+
+
 const managerTradeModel = mongoose.model('manager_trades', tradeSchema);
 
 module.exports = managerTradeModel;

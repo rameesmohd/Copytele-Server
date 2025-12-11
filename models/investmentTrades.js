@@ -76,12 +76,33 @@ const tradeSchema = new Schema(
         type: Number, 
         required: true 
       }, 
+      // ✅ Take Profit & Stop Loss
+      take_profit: {
+        type: String,
+        default: null
+      },
+      stop_loss: {
+        type: String,
+        default: null
+      },
+      // ✅ Flags to track if TP or SL was hit
+      tp_hit: {
+        type: Boolean,
+        default: false
+      },
+      sl_hit: {
+        type: Boolean,
+        default: false
+      },
     },
     {
       timestamps: true,
     }
   );
   
+tradeSchema.index({ manager: 1, createdAt: -1 });
+tradeSchema.index({ manager: 1, close_time: -1 });
+
 const investorTradeModel = mongoose.model('investor_trades', tradeSchema);
 
 module.exports = investorTradeModel;

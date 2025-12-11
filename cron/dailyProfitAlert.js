@@ -199,7 +199,7 @@ Start copying this manager’s trades and grow your capital with professional st
 cron.schedule("0 23 * * *", async () => {
   try {
     // Fetch all managers
-    const managers = await managerModel.find({ /* add filter if needed, e.g., is_active: true */ });
+    const managers = await managerModel.find();
     
     if (managers.length === 0) {
       console.log("⚠️ No managers found. Exiting.");
@@ -210,9 +210,6 @@ cron.schedule("0 23 * * *", async () => {
     const webAppUsers = await getWebAppUsers();
     const nonWebAppUsers = await getNonWebAppBotUsers();
     const allUsers = [...webAppUsers, ...nonWebAppUsers];
-    
-    console.log(webAppUsers,"webAppUsers");
-    console.log(nonWebAppUsers,"nonWebAppUsers");
     
     if (allUsers.length === 0) {
       console.log("⚠️ No users found. Exiting.");
@@ -228,10 +225,10 @@ cron.schedule("0 23 * * *", async () => {
       const managerProfit = await fetchManagerProfitToday(manager._id);
 
       // Only process if manager had any activity today
-      // if (managerProfit === 0) {
-      //   console.log(`⏭️ Skipping - no profit/loss for manager ${manager.nickname}`);
-      //   continue;
-      // }  
+      if (managerProfit === 0) {
+        console.log(`⏭️ Skipping - no profit/loss for manager ${manager.nickname}`);
+        continue;
+      }  
 
       // Batch fetch all user profits for this manager (much faster than individual queries)
       const webAppUserIds = webAppUsers.map(u => u._id);

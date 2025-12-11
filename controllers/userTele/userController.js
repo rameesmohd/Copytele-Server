@@ -130,7 +130,6 @@ const fetchUserWalletTransactions = async (req, res) => {
   }
 };
 
-
 const fetchAccountData = async (req, res) => {
   try {
     const {
@@ -159,6 +158,7 @@ const fetchAccountData = async (req, res) => {
     }
 
     const skip = (page - 1) * limit;
+    const limitNum = Number(limit);
     const now = new Date();
 
     let createdAtFilter = null;
@@ -203,6 +203,11 @@ const fetchAccountData = async (req, res) => {
       return res.json({
         success: true,
         result: { trades: [], accTransactions: [] },
+        pagination: {
+          page: Number(page),
+          limit: limitNum,
+          hasMore: false
+        }
       });
     }
 
@@ -212,17 +217,17 @@ const fetchAccountData = async (req, res) => {
       baseQuery.createdAt = createdAtFilter;
     }
 
-    /* ----------- FETCH TRADES ----------- */
+    /* ----------- FETCH TRADES (WITH +1 EXTRA) ----------- */
     const trades = await InvestmentTrades.find({
       ...baseQuery,
       investment: investment._id
     })
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(limit)
+      .limit(limitNum + 1) // Fetch one extra to check if more exist
       .lean();
 
-    /* ----------- FETCH ACCOUNT TRANSACTIONS ----------- */
+    /* ----------- FETCH ACCOUNT TRANSACTIONS (WITH +1 EXTRA) ----------- */
     const accTransactions = await InvestmentTransaction.find({
       ...baseQuery,
       investment: investment._id,
@@ -230,11 +235,19 @@ const fetchAccountData = async (req, res) => {
     })
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(limit)
+      .limit(limitNum + 1) // Fetch one extra to check if more exist
       .lean();
 
-    /* ----------- PAGINATION FIX ----------- */
-    const maxListCount = Math.max(trades.length, accTransactions.length);
+    /* ----------- CHECK IF MORE DATA EXISTS ----------- */
+    const hasMoreTrades = trades.length > limitNum;
+    const hasMoreTransactions = accTransactions.length > limitNum;
+
+    // Remove the extra items before sending
+    if (hasMoreTrades) trades.pop();
+    if (hasMoreTransactions) accTransactions.pop();
+
+    // If either has more, there's more data to load
+    const hasMore = hasMoreTrades || hasMoreTransactions;
 
     return res.json({
       success: true,
@@ -244,8 +257,8 @@ const fetchAccountData = async (req, res) => {
       },
       pagination: {
         page: Number(page),
-        limit: Number(limit),
-        hasMore: maxListCount === Number(limit)
+        limit: limitNum,
+        hasMore: hasMore
       }
     });
 
@@ -549,5 +562,5 @@ module.exports = {
     handleKycProofSubmit,
 
     fetchRebateTx,
-    trasferRebateToWallet
+    trasferRebateToWallet,
 }

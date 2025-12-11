@@ -266,25 +266,36 @@ const fetchAccountData = async (req, res) => {
       .find(baseQuery)
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(limit);
+      .limit(Number(limit) + 1); // Fetch one extra to check if more exist
 
     /* ----------- FETCH TRANSACTIONS ----------- */
-    const accTransactions = await InvestmentTransaction
-      .find(baseQuery)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
+    // const accTransactions = await InvestmentTransaction
+    //   .find(baseQuery)
+    //   .sort({ createdAt: -1 })
+    //   .skip(skip)
+    //   .limit(Number(limit) + 1); // Fetch one extra to check if more exist
+
+    // Check if there are more items
+    const hasMoreTrades = trades.length > Number(limit);
+    // const hasMoreTransactions = accTransactions.length > Number(limit);
+    
+    // Remove the extra items
+    if (hasMoreTrades) trades.pop();
+    // if (hasMoreTransactions) accTransactions.pop();
+
+    // Determine if there's more data
+    const hasMore = hasMoreTrades 
 
     return res.json({
       success: true,
       result: {
         trades,
-        accTransactions
+        // accTransactions
       },
       pagination: {
         page: Number(page),
         limit: Number(limit),
-        hasMore: trades.length + accTransactions.length === Number(limit)
+        hasMore: hasMore
       }
     });
 
@@ -293,6 +304,59 @@ const fetchAccountData = async (req, res) => {
   }
 };
 
+const fetchManagerTransactions = async (req, res) => {
+  try {
+    const { manager_id, limit = 10, skip = 0, filter = "all" } = req.query;
+
+    if (!manager_id)
+    return res.status(400).json({
+      success: false,
+      message: "Manager ID missing"
+    });
+
+    const limitNum = Number(limit);
+    const skipNum = Number(skip);
+
+    if (isNaN(limitNum) || isNaN(skipNum)) {
+      return res.status(400).json({ errMsg: "Invalid pagination values" });
+    }
+
+    // Build query
+    const query = {
+      manager: manager_id,
+      ...(filter !== "all" && { type: filter }), // filter: deposit / withdrawal
+    };
+
+    // Count total before pagination
+    const totalCount = await InvestmentTransaction.countDocuments(query);
+
+    // Fetch data
+    const transactions = await InvestmentTransaction.find(query)
+      .sort({ createdAt: -1 }) // latest first
+      .limit(limitNum)
+      .skip(skipNum)
+      .lean();
+
+    return res.status(200).json({
+      status: "success",
+      result: {
+        transactions,
+        pagination: {
+          total: totalCount,
+          limit: limitNum,
+          skip: skipNum,
+          hasMore: skipNum + transactions.length < totalCount,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching manager transaction history:", error);
+    return res.status(500).json({
+      errMsg: "Server error",
+      error: error.message,
+    });
+  }
+};
 
   module.exports = { 
       getManagerData,
@@ -300,5 +364,6 @@ const fetchAccountData = async (req, res) => {
       login,
       managerLogout,
       fetchAccountData,
-      fetchManager
+      fetchManager,
+      fetchManagerTransactions
   }
