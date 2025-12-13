@@ -38,7 +38,7 @@ const teleUser = async (req, res) => {
     const botUser = await botModel.findOne({id})
 
     // HANDLE MESSAGE TO BOT SCHEDULE
-    if(!botUser.is_opened_webapp){
+    if(botUser && !botUser.is_opened_webapp){
         await botModel.findOneAndUpdate({id},{is_opened_webapp : true})
     }
 

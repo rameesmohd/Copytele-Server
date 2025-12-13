@@ -14,8 +14,7 @@ const connectDB = require('./config/mongoose.js');
   }
 
   console.log("⏳ Cron Worker Started...");
-
-  // --- Load Cron Jobs ---
+  
   try {
     require('./cron/rolloverService.js');
     require('./cron/intervalservice.js');
