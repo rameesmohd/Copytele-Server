@@ -19,4 +19,4 @@ const botUserSchema = new Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model("botUser", botUserSchema);
+module.exports = mongoose.model("bot_users", botUserSchema);

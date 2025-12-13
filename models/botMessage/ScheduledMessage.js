@@ -40,4 +40,4 @@ const scheduledMessageSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model("ScheduledMessage", scheduledMessageSchema);
+module.exports = mongoose.model("scheduled_messages", scheduledMessageSchema);

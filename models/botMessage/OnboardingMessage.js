@@ -14,4 +14,4 @@ const onboardingMessageSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model("OnboardingMessage", onboardingMessageSchema);
+module.exports = mongoose.model("onboarding_messages", onboardingMessageSchema);

@@ -22,4 +22,4 @@ const userPortfolioChart = new Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model("userPortfolioChart", userPortfolioChart);
+module.exports = mongoose.model("user_portfolio_chart", userPortfolioChart);

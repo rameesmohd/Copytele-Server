@@ -21,7 +21,7 @@ const rolloverSchema = new Schema({
   next_rollover_time: { type: Date, required: true },
 
   processed_transactions: [
-    { type: mongoose.Schema.Types.ObjectId, ref: "investmentTransactions" },
+    { type: mongoose.Schema.Types.ObjectId, ref: "investment_transactions" },
   ],
 
   failure_reason: { type: String },

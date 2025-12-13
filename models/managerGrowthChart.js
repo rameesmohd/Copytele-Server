@@ -21,5 +21,5 @@ const compountProfitChart = new Schema({
   }
 );
   
-const compountProfitChartModel = mongoose.model('compountProfitChart', compountProfitChart);
+const compountProfitChartModel = mongoose.model('compount_profit_chart', compountProfitChart);
 module.exports = compountProfitChartModel;
