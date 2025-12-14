@@ -453,11 +453,11 @@ const handleInvestmentWithdrawal = async (req, res) => {
 
     const amount = toTwoDecimals(rawAmount);
     if (!amount || amount <= 0)
-      return res.status(400).json({ errMsg: "Invalid withdrawal amount." });
+      return res.status(400).json({ success : false, errMsg: "Invalid withdrawal amount." });
 
     const investment = await investmentModel.findById(investmentId);
     if (!investment)
-      return res.status(400).json({ errMsg: "Investment not found." });
+      return res.status(400).json({ success : false, errMsg: "Investment not found." });
     
     const user = await UserModel.findById(userId);
 
@@ -505,7 +505,7 @@ const handleInvestmentWithdrawal = async (req, res) => {
         },
       });
 
-      return res.status(200).json({ msg: "Withdrawal processed successfully." });
+      return res.status(200).json({success : true,  msg: "Withdrawal processed successfully." });
     }
 
     /** -----------------------------------------
@@ -529,7 +529,7 @@ const handleInvestmentWithdrawal = async (req, res) => {
 
       return res
         .status(200)
-        .json({ errMsg: "Liquidity Period is active", blocked: true });
+        .json({success : false, errMsg: "Liquidity Period is active", blocked: true });
     }
 
     /** -----------------------------------------
