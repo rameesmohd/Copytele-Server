@@ -394,6 +394,7 @@ const getWithdrawSummary= async(req,res)=> {
     result,
   })
   } catch (error) {
+    console.log(error);
     res.status(500).json({success: false,errMsg : "Server Error",error})
   }
 }
