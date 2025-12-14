@@ -134,16 +134,16 @@ const fetchLatestCompletedRollover = async () => {
 //------------------------------------------------------------
 
 // Every 4 hours, Monday–Friday
-// cron.schedule("0 */4 * * 1-5", () => {
-//   console.log("⏱ Running scheduled 4hr rollover");
-//   createRollover("4hr");
-// });
+cron.schedule("0 */4 * * 1-5", () => {
+  console.log("⏱ Running scheduled 4hr rollover");
+  createRollover("4hr");
+});
 
 // 15-minute testing (enable when needed)
-cron.schedule("*/15 * * * *", () => {
-  createRollover("15min");
-  console.log("🧪 Running test 15min rollover");
-});
+// cron.schedule("*/15 * * * *", () => {
+//   createRollover("15min");
+//   console.log("🧪 Running test 15min rollover");
+// });
 
 module.exports = {
   createRollover,

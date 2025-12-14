@@ -10,7 +10,6 @@ const connectDB = require('./config/mongoose.js');
     console.log("📡 MongoDB connected for Cron Worker");
   } catch (err) {
     console.error("❌ MongoDB Connection Error in Worker:", err);
-    process.exit(1); // prevent running cron without DB
   }
 
   console.log("⏳ Cron Worker Started...");
