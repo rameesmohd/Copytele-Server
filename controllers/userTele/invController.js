@@ -235,12 +235,24 @@ const toTwoDecimals = (v) => {
 const getWithdrawSummary= async(req,res)=> {
   try {
   const {id : investmentId } = req.query
-  if (!investmentId) throw new Error("investmentId required");
+  if (!mongoose.Types.ObjectId.isValid(investmentId)) {
+    return res.status(400).json({
+      success: false,
+      errMsg: "Invalid or missing investmentId",
+    });
+  }
 
-  // load investment with deposits
-  const investment = await investmentModel.findById(investmentId).lean();
-  if (!investment) throw new Error("Investment not found");
+  const investment = await investmentModel
+    .findById(investmentId)
+    .lean();
 
+  if (!investment) {
+    return res.status(404).json({
+      success: false,
+      errMsg: "Investment not found",
+    });
+  }
+  
   // Optionally load user if you need wallet ids etc
   const user = await UserModel.findById(investment.user).lean().catch(() => null);
 
