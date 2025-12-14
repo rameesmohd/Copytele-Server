@@ -1,32 +1,51 @@
-const multer = require('multer');
-require('dotenv').config();
+const multer = require("multer");
+const fs = require("fs");
+const path = require("path");
 
-// 🔹 Configure Multer Storage (Save in "uploads" Folder)
+// Absolute path to uploads directory
+const uploadDir = path.join(process.cwd(), "uploads");
+
+// Ensure uploads folder exists
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Multer storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "uploads/"); // 🔹 Save files in "uploads" directory
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`); // 🔹 Rename files
+    const ext = path.extname(file.originalname);
+    const safeName = `${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(2)}${ext}`;
+
+    cb(null, safeName);
   },
 });
 
-// 🔹 File Filter (Accept Only Images)
+// File filter
 const fileFilter = (req, file, cb) => {
-   const allowedTypes = [
+  const allowedTypes = [
     "image/jpeg",
     "image/png",
     "image/jpg",
-    "application/pdf"       // <-- ALLOW PDF
+    "application/pdf",
   ];
 
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-       cb(new Error("Only .jpeg, .jpg, .png, and .pdf files are allowed"), false);
+    cb(new Error("Only JPG, PNG, JPEG, and PDF files are allowed"), false);
   }
 };
 
-const upload = multer({ storage, fileFilter });
+// Export upload middleware
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+});
 
 module.exports = upload;
