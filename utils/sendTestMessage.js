@@ -1,4 +1,5 @@
-const { sendMessageSafe } = require("./sendBotMessage")
+const { sendMessageSafe } = require("./sendBotMessage");
+const { convertToTelegramHtml } = require("../utils/convertToTelegramHtml");
 
 const sendTestMessage = async (msg) => {
   try {
@@ -9,8 +10,11 @@ const sendTestMessage = async (msg) => {
       return false;
     }
 
+    // ✅ Convert HTML to Telegram format
+    const telegramCaption = msg.caption ? convertToTelegramHtml(msg.caption) : "";
+
     const payload = {
-      chat_id: channelId,        // <-- send to channel
+      chat_id: channelId,
       parse_mode: "HTML",
       reply_markup: {
         inline_keyboard:
@@ -24,28 +28,28 @@ const sendTestMessage = async (msg) => {
 
     switch (msg.type) {
       case "text":
-        payload.text = msg.caption || "(no caption)";
+        payload.text = telegramCaption || "(no caption)";
         sendMessageSafe("sendMessage", payload);
         break;
 
       case "image":
         if (!media) return console.log("⚠ Missing image fileId");
         payload.photo = media;
-        payload.caption = msg.caption || "";
+        payload.caption = telegramCaption;
         sendMessageSafe("sendPhoto", payload);
         break;
 
       case "video":
         if (!media) return console.log("⚠ Missing video fileId");
         payload.video = media;
-        payload.caption = msg.caption || "";
+        payload.caption = telegramCaption;
         sendMessageSafe("sendVideo", payload);
         break;
 
       case "audio":
         if (!media) return console.log("⚠ Missing audio fileId");
         payload.audio = media;
-        payload.caption = msg.caption || "";
+        payload.caption = telegramCaption;
         sendMessageSafe("sendAudio", payload);
         break;
 
@@ -63,4 +67,4 @@ const sendTestMessage = async (msg) => {
   }
 };
 
-module.exports = {sendTestMessage}
+module.exports = { sendTestMessage };

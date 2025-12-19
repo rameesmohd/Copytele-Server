@@ -35,41 +35,6 @@ app.use(helmet({
 
 app.set('trust proxy', 1);
 
-// const allowedOrigins = [
-//   'http://localhost:5173',
-//   'http://localhost:3001',
-//   'https://www.4xmeta.com',
-//   'https://api.4xmeta.com',
-//   'https://app.4xmeta.com',
-//   'https://admin.4xmeta.com',
-//   'https://web.telegram.org'
-// ];
-
-// const corsOptions = {
-//   origin: (origin, callback) => {
-//     if (!origin) {
-//       console.log(`No origin request`);
-//       return callback(null, true);
-//     }
-
-//     if (allowedOrigins.includes(origin)) {
-//       return callback(null, true);
-//     }
-
-//     console.log(`❌ CORS blocked request from: ${origin}`);
-//     return callback(null, false); // ❗ DO NOT throw error
-//   },
-//   methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"],
-//   credentials: true,
-//   allowedHeaders: [
-//     "Content-Type",
-//     "Authorization",
-//     "X-Requested-With",
-//   ],
-//   optionsSuccessStatus: 204,
-//   maxAge: 86400,
-// };
-
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3001",
@@ -96,6 +61,7 @@ const corsOptions = {
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  maxAge: 86400,
 };
 
 app.use(cors(corsOptions));
