@@ -144,7 +144,7 @@ const sendMessageToUser = async (user, manager, managerProfit, userProfit, hasIn
           text: hasInvested 
             ? "📊 View My Portfolio"
             : "🚀 Start Investing",
-          url: process.env.WEBAPP_URL
+          webApp: process.env.WEBAPP_URL
         }
       ]
     ]
@@ -225,7 +225,7 @@ cron.schedule("0 23 * * *", async () => {
       const managerProfit = await fetchManagerProfitToday(manager._id);
 
       // Only process if manager had any activity today
-      if (managerProfit === 0) {
+      if (managerProfit <= 100) {
         console.log(`⏭️ Skipping - no profit/loss for manager ${manager.nickname}`);
         continue;
       }  
