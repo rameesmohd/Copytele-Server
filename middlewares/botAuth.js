@@ -7,6 +7,7 @@ const botAuth = (req, res, next) => {
     const signature = req.headers["x-signature"];
 
     if (!signature) {
+      console.log("Missing signature header" )
       return res.status(401).json({ success: false, message: "Missing signature header" });
     }
 

@@ -41,12 +41,15 @@ const saveUser = async (req, res) => {
 
 const getOnboardMessages = async (req, res) => {
   try {
-    const data = await OnboardingMessage.find({isActive : true}).sort({ order: 1});
+    const data = await OnboardingMessage
+      .find({ isActive: true })
+      .sort({ order: 1 });
+
     res.json(data);
   } catch (err) {
-    console.log(err);
+    console.error("Onboard fetch error:", err);
     res.status(500).json({ error: err.message });
   }
-}
+};
 
 module.exports = { saveUser,getOnboardMessages };
