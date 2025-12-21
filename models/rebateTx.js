@@ -13,7 +13,6 @@ const rebateTransactionSchema = new Schema(
     investment: {
       type: Schema.Types.ObjectId,
       ref: "investments",
-      required: true,
       index: true,
       sparse : true
     },

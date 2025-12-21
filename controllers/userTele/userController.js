@@ -564,8 +564,6 @@ const trasferRebateToWallet = async (req, res) => {
   }
 };
 
-
-
 module.exports = {
     fetchUserWallet,
     fetchUserWalletTransactions,
