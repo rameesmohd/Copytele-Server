@@ -52,4 +52,22 @@ const getOnboardMessages = async (req, res) => {
   }
 };
 
-module.exports = { saveUser,getOnboardMessages };
+const updateUserJoinedChannel = async(req,res)=>{
+  try {
+    const { id } = req.query
+    await BotUser.updateOne(
+      { id },
+      { $set: { is_joined_channel: true } }
+    );
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("Onboard fetch error:", err);
+    res.status(500).json({ error: err.message });
+  }
+}
+
+module.exports = { 
+  saveUser,
+  getOnboardMessages,
+  updateUserJoinedChannel 
+};
