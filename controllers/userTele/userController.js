@@ -11,7 +11,7 @@ const {
 } = require("../../assets/html/verification");
 const { uploadToCloudinary } = require('../../config/cloudinary');
 const { sendKycRequestedAlert } = require('../bot/botAlerts');
-const rebateTransactionModel = require('../../models/rebateTx');
+const RebateTransactionModel = require('../../models/rebateTx');
 const UserTransaction = require('../../models/userTx');
 const { default: mongoose } = require('mongoose');
 
@@ -457,13 +457,13 @@ const fetchRebateTx = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const [transactions, total] = await Promise.all([
-      rebateTransactionModel
+      RebateTransactionModel
         .find({ user: user._id })
         .populate({ path: "investment", select: "inv_id" })
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
-      rebateTransactionModel.countDocuments({ user: user._id }),
+      RebateTransactionModel.countDocuments({ user: user._id }),
     ]);
 
     const hasMore = page * limit < total;
@@ -527,6 +527,20 @@ const trasferRebateToWallet = async (req, res) => {
           from: `REBATE_${user.wallets.rebate_id}`,
           to: `WALL_${user.wallets.main_id}`,
           description: "Rebate transferred",
+          transaction_id: "TX-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
+        },
+      ],
+      { session }
+    );
+
+     await RebateTransactionModel.create(
+      [
+        {
+          user: user._id,
+          type: "transfer",
+          status: "approved",
+          amount: rebateBalance,
+          description: "Transfered to Wallet",
           transaction_id: "TX-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
         },
       ],

@@ -15,6 +15,7 @@ const rebateTransactionSchema = new Schema(
       ref: "investments",
       required: true,
       index: true,
+      sparse : true
     },
     type: {
       type: String,
