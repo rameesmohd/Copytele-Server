@@ -9,6 +9,6 @@ router.post('/save-user',saveUser)
 
 router.get('/onboard/list',getOnboardMessages)
 
-router.get('/joined-channel',updateUserJoinedChannel)
+router.post('/joined-channel',updateUserJoinedChannel)
 
 module.exports=router

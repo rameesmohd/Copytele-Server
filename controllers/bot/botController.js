@@ -54,7 +54,7 @@ const getOnboardMessages = async (req, res) => {
 
 const updateUserJoinedChannel = async (req, res) => {
   try {
-    const { id } = req.query;
+    const { id } = req.body;
 
     if (!id) {
       return res.status(400).json({ success: false, message: "Missing user id" });
