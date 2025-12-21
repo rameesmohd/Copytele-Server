@@ -526,7 +526,7 @@ const trasferRebateToWallet = async (req, res) => {
           amount:  Number(rebateBalance).toFixed(2),
           from: `REBATE_${user.wallets.rebate_id}`,
           to: `WALL_${user.wallets.main_id}`,
-          description: "Rebate transferred",
+          description: "Rebate Transferred",
           transaction_id: "TX-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
         },
       ],
