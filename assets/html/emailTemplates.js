@@ -1,3 +1,5 @@
+const dotenv = require('dotenv');
+dotenv.config();
 const footer = require("./footer");
 const header = require("./header");
 const APP_NAME = process.env.APP_NAME || "-"

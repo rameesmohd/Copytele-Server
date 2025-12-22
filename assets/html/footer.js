@@ -1,4 +1,4 @@
-const footer = () => `
+const footer = (SUPPORT_MAIL,APP_NAME) => `
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#ffffff; padding:0; margin-top:20px;">
   <tr>
     <td align="center" style="padding:20px 0 0 0;">
