@@ -183,12 +183,12 @@ const fetchManager =async(req,res)=>{
         const {id} = req.query
         const recentTradeslimit = 3
         const manager =  await managerModel.findOne({id : id },{password : 0})
+        if(manager){
         const recentTrades = await managerTradeModel
           .find({ manager: manager._id })
           .sort({ createdAt: -1 })       // newest first
           .limit(recentTradeslimit);
 
-        if(manager){
             return res.status(200).json({
               status : "success",
               manager,
