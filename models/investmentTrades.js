@@ -84,7 +84,6 @@ const tradeSchema = new Schema(
       type: String,
       default: () =>
         crypto.randomUUID().replace(/-/g, "").slice(0, 12).toUpperCase(),
-      unique: true,
     },
 
     investor_profit: {

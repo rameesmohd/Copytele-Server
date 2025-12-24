@@ -59,8 +59,6 @@ const investmentTransactionSchema = new Schema(
 
     transaction_id: {
       type: String,
-      unique: true,
-      index: true,
       default: () =>
         "ITX-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
     },
