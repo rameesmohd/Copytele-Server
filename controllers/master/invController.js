@@ -667,7 +667,7 @@ const approveDepositTransaction = async (transactionId, rollover_id) => {
         // Atomically mark transaction approved (only if still pending)
         const transaction = await investmentTransactionModel.findOneAndUpdate(
           { _id: transactionId, status: "pending" },
-          { status: "approved", rollover_id },
+          { status: "success", rollover_id },
           { session, new: true }
         );
 
@@ -884,15 +884,6 @@ const approveWithdrawalTransaction = async (withdrawTransactionId, rollover_id) 
 
 
 module.exports = {
-    //User
-    // makeDeposit,
-    // fetchMyInvestments,
-    // fetchInvestment,
-    // fetchInvestmentTransactions,
-    // topUpInvestment,
-    // handleInvestmentWithdrawal,
-    // fetchInvestmentTrades,
-
     //rollover
     approveDepositTransaction,
     approveWithdrawalTransaction,

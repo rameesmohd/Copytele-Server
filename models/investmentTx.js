@@ -42,7 +42,7 @@ const investmentTransactionSchema = new Schema(
 
     status: {
       type: String,
-      enum: ["pending", "success", "failed"],
+      enum: ["pending", "success", "failed","approved"],
       default: "pending",
     },
 

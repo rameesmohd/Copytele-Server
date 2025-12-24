@@ -122,9 +122,6 @@ userSchema.index(
 // Referral system
 userSchema.index({ "referral.referred_by": 1 });
 
-// Token / session control
-userSchema.index({ currToken: 1 });
-
 // Admin listing (optional but safe)
 userSchema.index({ createdAt: -1 });
 
