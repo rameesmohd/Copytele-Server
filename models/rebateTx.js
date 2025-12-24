@@ -8,37 +8,40 @@ const rebateTransactionSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "users",
       required: true,
-      index: true,
     },
+
     investment: {
       type: Schema.Types.ObjectId,
       ref: "investments",
-      index: true,
-      sparse : true
+      default: null,
     },
+
     type: {
       type: String,
       enum: ["commission", "withdrawal", "transfer"],
       required: true,
-      index: true,
     },
+
     status: {
       type: String,
       enum: ["pending", "approved", "rejected"],
       default: "pending",
-      index: true,
     },
+
     amount: {
       type: Number,
       required: true,
       min: 0,
     },
+
     description: {
       type: String,
       default: "",
     },
+
     transaction_id: {
       type: String,
+      unique: true, // ✅ guaranteed uniqueness
       index: true,
     },
   },
@@ -47,19 +50,40 @@ const rebateTransactionSchema = new Schema(
   }
 );
 
-/**
- * Auto-generate unique transaction ID before save (if missing)
- */
+/* =========================
+   AUTO TRANSACTION ID
+   ========================= */
 rebateTransactionSchema.pre("save", function (next) {
   if (!this.transaction_id) {
-    this.transaction_id = uuidv4().split("-")[0].toUpperCase(); // e.g. "3F7A2B9C"
+    this.transaction_id = uuidv4()
+      .replace(/-/g, "")
+      .slice(0, 10)
+      .toUpperCase();
   }
   next();
 });
 
-// Compound index for fast reporting
-rebateTransactionSchema.index({ user: 1, createdAt: -1 });
-rebateTransactionSchema.index({ type: 1, createdAt: -1 });
+// User rebate timeline
+rebateTransactionSchema.index({
+  user: 1,
+  createdAt: -1,
+});
+
+// User + status filtering (approved, pending)
+rebateTransactionSchema.index({
+  user: 1,
+  status: 1,
+  createdAt: -1,
+});
+
+rebateTransactionSchema.index({
+  investment: 1 
+});
+
+rebateTransactionSchema.index({
+  investment: 1,
+  createdAt: -1,
+});
 
 const rebateTransactionModel =
   mongoose.models.rebate_transactions ||

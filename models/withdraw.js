@@ -6,13 +6,11 @@ const withdrawalSchema = new Schema(
     user: {
       type: Schema.Types.ObjectId,
       ref: "users",
-      index: true,
       required: true,
     },
 
     wallet_id: {
       type: String,
-      index: true,
       required: true,
     },
 
@@ -24,33 +22,34 @@ const withdrawalSchema = new Schema(
         "USDT-ERC20"
       ],
       required: true,
-      index: true,
     },
 
     network_fee: {
-      type: Number,   // FIXED (was "Type")
+      type: Number,
       default: 0,
+      min: 0,
     },
 
+    // Blockchain transaction hash (after payout)
     crypto_txid: {
       type: String,
       default: null,
       trim: true,
-      index: true,
+      unique: true,
+      sparse: true, // ✅ allows multiple nulls
     },
 
     recipient_address: {
       type: String,
       required: true,
       trim: true,
-      lowercase: true, // Helps avoid duplicate uppercase/lowercase issues
+      lowercase: true,
     },
 
     status: {
       type: String,
       enum: ["pending", "approved", "rejected"],
       default: "pending",
-      index: true,
     },
 
     is_payment_sent: {
@@ -66,27 +65,22 @@ const withdrawalSchema = new Schema(
 
     description: {
       type: String,
-      default: null,
+      default: "",
       trim: true,
     },
 
     transaction_id: {
       type: String,
-      default: () =>
-        Math.random().toString(36).substring(2, 10).toUpperCase(),
+      unique: true,
       index: true,
+      default: () =>
+        "WDR-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
     },
 
     related_transaction: {
       type: Schema.Types.ObjectId,
-      ref: "user_transactions", // FIXED — should relate to wallet history
+      ref: "user_transactions",
       default: null,
-    },
-
-    createdAt: {
-      type: Date,
-      default: Date.now,
-      index: true,
     },
   },
   {
@@ -94,5 +88,9 @@ const withdrawalSchema = new Schema(
   }
 );
 
-const withdrawalModel = mongoose.model("withdrawals", withdrawalSchema);
-module.exports = withdrawalModel;
+withdrawalSchema.index({ user: 1, createdAt: -1 });
+withdrawalSchema.index({ status: 1, createdAt: -1 });
+withdrawalSchema.index({ payment_mode: 1, status: 1 });
+
+const WithdrawalModel = mongoose.model("withdrawals", withdrawalSchema);
+module.exports = WithdrawalModel;

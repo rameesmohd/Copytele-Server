@@ -63,4 +63,7 @@ const scheduledMessageSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+scheduledMessageSchema.index({ isActive: 1, order: 1 });
+scheduledMessageSchema.index({ isActive: 1, sendAt: 1 });
+
 module.exports = mongoose.model("scheduled_messages", scheduledMessageSchema);

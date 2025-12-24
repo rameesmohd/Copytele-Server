@@ -13,7 +13,10 @@ const { rollOverTradeDistribution } = require("../controllers/tradeController");
 //------------------------------------------------------------
 const processRollover = async (rolloverId) => {
   try {
-    const rollover = await rolloverModel.findById(rolloverId);
+    const rollover = await rolloverModel.findOne({
+      _id: rolloverId,
+      status: "pending",
+    });
     if (!rollover) return console.log("❌ Rollover not found:", rolloverId);
 
     //------------------------------------------------------------

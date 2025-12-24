@@ -1,25 +1,29 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
-const userPortfolioChart = new Schema(
+const userPortfolioChartSchema = new Schema(
   {
     user: {
       type: Schema.Types.ObjectId,
       ref: "users",
-      index: true,
       required: true,
     },
-    date: { 
-      type: Date, 
-      required: true, 
-      index: true 
-    }, 
-    value: { 
-      type: Number, 
-      required: true 
+    date: {
+      type: Date,
+      required: true,
+    },
+    value: {
+      type: Number,
+      required: true,
     },
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model("user_portfolio_chart", userPortfolioChart);
+
+userPortfolioChartSchema.index({ user: 1, date: 1 });
+
+module.exports = mongoose.model(
+  "user_portfolio_chart",
+  userPortfolioChartSchema
+);

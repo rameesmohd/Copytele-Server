@@ -7,14 +7,12 @@ const investmentTransactionSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "users",
       required: true,
-      index: true,
     },
 
     investment: {
       type: Schema.Types.ObjectId,
       ref: "investments",
       required: true,
-      index: true,
     },
 
     manager: {
@@ -25,14 +23,13 @@ const investmentTransactionSchema = new Schema(
 
     // deposit → money entering investment
     // withdrawal → money going back to user
-    // manager_fee → monthly/weekly fee deducted
+    // manager_fee → periodic fee deducted
     type: {
       type: String,
       enum: ["deposit", "withdrawal", "manager_fee"],
       required: true,
     },
 
-    // From and To show source/destination reference
     from: {
       type: String,
       default: null,
@@ -43,7 +40,6 @@ const investmentTransactionSchema = new Schema(
       default: null,
     },
 
-    // failed → reversed
     status: {
       type: String,
       enum: ["pending", "success", "failed"],
@@ -56,7 +52,6 @@ const investmentTransactionSchema = new Schema(
       min: 0,
     },
 
-    // Optional description
     comment: {
       type: String,
       default: "",
@@ -65,19 +60,17 @@ const investmentTransactionSchema = new Schema(
     transaction_id: {
       type: String,
       unique: true,
+      index: true,
       default: () =>
         "ITX-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
-      index: true,
     },
 
-    // Reference to the user transaction if it exists
     related_transaction: {
       type: Schema.Types.ObjectId,
       ref: "user_transactions",
       default: null,
     },
 
-    // For manager_fee or penalties
     deduction: {
       type: Number,
       default: 0,
@@ -88,16 +81,10 @@ const investmentTransactionSchema = new Schema(
       default: false,
     },
 
-    // For rollover tracking of investment life cycle
     rollover_id: {
       type: Schema.Types.ObjectId,
       ref: "rollover",
       default: null,
-    },
-
-    createdAt: {
-      type: Date,
-      default: Date.now,
     },
   },
   {
@@ -105,11 +92,32 @@ const investmentTransactionSchema = new Schema(
   }
 );
 
-/* ------- Indexes for faster queries ------- */
-investmentTransactionSchema.index({ user: 1, createdAt: -1 });
-investmentTransactionSchema.index({ investment: 1, createdAt: -1 });
-investmentTransactionSchema.index({ manager: 1 });
-investmentTransactionSchema.index({ type: 1 });
+investmentTransactionSchema.index({
+  investment: 1,
+  type: 1,
+  status: 1,
+  createdAt: -1,
+});
+
+investmentTransactionSchema.index({
+  user: 1,
+  createdAt: -1,
+});
+
+investmentTransactionSchema.index({
+  manager: 1,
+  createdAt: -1,
+});
+
+investmentTransactionSchema.index(
+  { transaction_id: 1 },
+  { unique: true }
+);
+
+investmentTransactionSchema.index({ 
+  status: 1, 
+  type: 1 
+});
 
 const InvestmentTransaction = mongoose.model(
   "investment_transactions",

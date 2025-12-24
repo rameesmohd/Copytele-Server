@@ -1,37 +1,36 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
-const transactionSchema = new Schema({
-    user: { 
-      type: Schema.Types.ObjectId, 
-      ref: "users", 
+const transactionSchema = new Schema(
+  {
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: "users",
       required: true,
-      index: true
     },
 
-    // deposit / withdrawal / transfer / profit
+    // deposit / withdrawal / transfer
     type: {
       type: String,
       enum: ["deposit", "withdrawal", "transfer"],
       required: true,
-      index: true
     },
 
-    // blockchain network or system wallet
+    // blockchain / internal wallet
     payment_mode: {
-        type: String,
-        enum: [
-          "main-wallet",
-          "USDT-TRC20",
-          "USDT-BEP20",
-          "USDT-ERC20",
-          "bank-transfer",
-          "rebate-wallet"
-        ],
-        default: "main-wallet",
+      type: String,
+      enum: [
+        "main-wallet",
+        "USDT-TRC20",
+        "USDT-BEP20",
+        "USDT-ERC20",
+        "bank-transfer",
+        "rebate-wallet",
+      ],
+      default: "main-wallet",
     },
 
-    // Status only needed for deposit/withdrawal
+    // Only meaningful for deposit / withdrawal
     status: {
       type: String,
       enum: ["pending", "completed", "failed"],
@@ -41,10 +40,9 @@ const transactionSchema = new Schema({
     amount: {
       type: Number,
       required: true,
-      min: 0
+      min: 0,
     },
 
-    // From and To show source/destination reference
     from: {
       type: String,
       default: null,
@@ -55,33 +53,54 @@ const transactionSchema = new Schema({
       default: null,
     },
 
-    // OPTIONAL: Investment reference
+    // Optional investment reference
     investment: {
       type: Schema.Types.ObjectId,
       ref: "investments",
       default: null,
-      index: true
     },
 
-    // Descriptions like:
-    // "Deposit from TRC20 wallet"
-    // "Transferred to Investment #INV123"
-    // "Profit credited from Investment #INV123"
     description: {
       type: String,
-      default: ""
+      default: "",
     },
 
     transaction_id: {
       type: String,
-      default: () => "TX-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
-      index: true
+      default: () =>
+        "TX-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
     },
-},
-    { timestamps: true }
+  },
+  {
+    timestamps: true, // createdAt, updatedAt
+  }
 );
 
-transactionSchema.index({ createdAt: -1 });
+// Main transaction filtering + pagination
+transactionSchema.index({
+  user: 1,
+  type: 1,
+  status: 1,
+  createdAt: -1,
+});
+
+// Wallet timeline (MT5-style history)
+transactionSchema.index({
+  user: 1,
+  createdAt: -1,
+});
+
+// Investment-related account view
+transactionSchema.index({
+  investment: 1,
+  user: 1,
+  createdAt: -1,
+});
+
+// Audit / reconciliation
+transactionSchema.index({
+  transaction_id: 1,
+});
 
 const UserTransaction = mongoose.model("user_transactions", transactionSchema);
 module.exports = UserTransaction;

@@ -37,4 +37,8 @@ const onboardingMessageSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+onboardingMessageSchema.index({ isActive: 1, order: 1 });
+onboardingMessageSchema.index({ order: 1 });
+
+
 module.exports = mongoose.model("onboarding_messages", onboardingMessageSchema);

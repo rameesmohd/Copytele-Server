@@ -29,6 +29,9 @@ const intervalSchema = new Schema({
     total_investments_processed: { type: Number, default: 0 }
     
 }, { timestamps: true });
+
+intervalSchema.index({ status: 1, createdAt: -1 });
+intervalSchema.index({ interval_index: 1 }, { unique: true });
   
 const intervalModel = mongoose.model('interval', intervalSchema);
 module.exports = intervalModel;

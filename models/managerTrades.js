@@ -7,7 +7,6 @@ const tradeSchema = new Schema(
         type: Schema.Types.ObjectId, 
         ref: 'manager', 
         required: true,
-        index: true
       },
       symbol : { 
         type: String, 
@@ -75,8 +74,10 @@ const tradeSchema = new Schema(
 );
   
 // Add index for better query performance
-tradeSchema.index({ manager: 1, createdAt: -1 });
+tradeSchema.index({ is_distributed: 1 });
+tradeSchema.index({ manager: 1, is_distributed: 1, close_time: -1 });
 tradeSchema.index({ manager: 1, close_time: -1 });
+tradeSchema.index({ manager: 1, createdAt: -1 });
 
 
 const managerTradeModel = mongoose.model('manager_trades', tradeSchema);

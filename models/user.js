@@ -1,42 +1,47 @@
 const mongoose = require("mongoose");
 
-const twoDecimalPlaces = (value) => Number(parseFloat(value).toFixed(2));
+const twoDecimalPlaces = (value) =>
+  Number(parseFloat(value || 0).toFixed(2));
 
-const userSchema = new mongoose.Schema({
-  login_type: {
-    type: String,
-    enum: ["telegram", "web"],
-    required: true
-  },
+const userSchema = new mongoose.Schema(
+  {
+    login_type: {
+      type: String,
+      enum: ["telegram", "web"],
+      required: true,
+    },
 
-  user_id: { type: String, unique: true, sparse: true },
+    user_id: {
+      type: String,
+    },
 
-  /* TELEGRAM USERS */
-  telegram: {
-    id: { type: String, unique: true, sparse: true },
-    username: String,
+    telegram: {
+      id: {
+        type: String,
+      },
+      username: String,
+      first_name: String,
+      last_name: String,
+      photo_url: String,
+      is_premium: Boolean,
+    },
+
+    /* ---------------- WEB ---------------- */
+    email: {
+      type: String,
+      lowercase: true,
+    },
+    password: String,
+
+    /* ---------------- PROFILE ---------------- */
     first_name: String,
     last_name: String,
-    photo_url: String,
-    is_premium: Boolean,
-  },
+    mobile: String,
+    country: String,
+    country_code: String,
+    date_of_birth: Date,
 
-  /* WEBSITE USERS */
-  email: {
-    type: String,
-    lowercase: true,
-    sparse: true,
-  },
-  password: { type: String },
-
-  first_name: String,
-  last_name: String,
-  mobile: String,
-  country: String,
-  country_code: String,
-  date_of_birth: Date,
-
-  is_blocked: { type: Boolean, default: false },
+    is_blocked: { type: Boolean, default: false },
 
   kyc: {
     is_email_verified: { type: Boolean, default: false },
@@ -96,11 +101,32 @@ const userSchema = new mongoose.Schema({
   currToken : String
 }, { timestamps: true });
 
-/* PERFORMANCE INDEXES */
-userSchema.index({ login_type: 1 });
-userSchema.index({ createdAt: -1 });
-// userSchema.index({ "telegram.id": 1 });
+// Telegram login
+userSchema.index(
+  { "telegram.id": 1 },
+  { unique: true, sparse: true }
+);
+
+// Unified login (telegram + web)
+userSchema.index(
+  { user_id: 1 },
+  { unique: true, sparse: true }
+);
+
+// Web login
+userSchema.index(
+  { email: 1 },
+  { unique: true, sparse: true }
+);
+
+// Referral system
 userSchema.index({ "referral.referred_by": 1 });
-userSchema.index({ "wallets.main": -1 });
+
+// Token / session control
+userSchema.index({ currToken: 1 });
+
+// Admin listing (optional but safe)
+userSchema.index({ createdAt: -1 });
+
 
 module.exports = mongoose.model("users", userSchema);

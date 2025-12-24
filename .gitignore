@@ -13,6 +13,8 @@ dist
 dist-ssr
 *.local
 combined.log
+note.txt
+
 
 # Editor directories and files
 .vscode/*
