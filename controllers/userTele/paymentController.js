@@ -550,7 +550,7 @@ const fetchAddressBalance = async (req, res) => {
             return res.status(400).send("Invalid payment ID");
         }
 
-        let usdtBalance = "0"; 
+        let usdtBalance = 0; 
 
         if (payment_mode == "usdt-trc20") {
             const tronWebInstance = createTronWebInstance(process.env.PRIVATE_KEY);
@@ -564,7 +564,7 @@ const fetchAddressBalance = async (req, res) => {
         }
 
         // Check if balance is zero
-        if (usdtBalance === "0") {
+        if (usdtBalance == 0) {
             return res.status(200).json({ balance: usdtBalance, msg: "No funds available",payment_address,private_key });
         }
 
@@ -580,9 +580,7 @@ module.exports = {
     trc20CheckAndTransferPayment,
     bep20CreateDeposit,
     bep20CheckAndTransferPayment,
-
     withdrawFromMainWallet,
-
     fetchAddressBalance
 }
 

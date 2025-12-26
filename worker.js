@@ -19,7 +19,6 @@ const connectDB = require('./config/mongoose.js');
     require('./cron/intervalservice.js');
 
     require('./cron/broadcastWorker.js');
-    require('./cron/dailyProfitAlert.js');
 
     console.log("✅ All cron jobs initialized");
   } catch (err) {

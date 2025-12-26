@@ -156,7 +156,7 @@ const intervalHandle = async (intervalId = null) => {
         type: "manager_fee",
         status: "success",
         amount: perfFee,
-        comment: `Performance fee deducted (${perfFee})`,
+        comment: `Performance fee deducted`,
       });
 
       updatedManagerSet.add(String(inv.manager));
