@@ -35,15 +35,6 @@ app.use(helmet({
 
 app.set('trust proxy', 1);
 
-// const allowedOrigins = [
-//   "http://localhost:5173",
-//   "http://localhost:3001",
-//   "https://www.4xmeta.com",
-//   "https://api.4xmeta.com",
-//   "https://app.4xmeta.com",
-//   "https://admin.4xmeta.com",
-// ];
-
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",").map(o => o.trim())
   : [];
