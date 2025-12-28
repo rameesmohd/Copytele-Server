@@ -22,6 +22,7 @@ const buttonSchema = new mongoose.Schema(
 
 const scheduledMessageSchema = new mongoose.Schema(
   {
+    name  : { type: String },
     type: { type: String, enum: ["text", "audio", "video", "image"], required: true },
     caption: { type: String },
     fileId: { type: String },
