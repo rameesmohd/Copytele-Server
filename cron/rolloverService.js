@@ -1,7 +1,7 @@
 const cron = require("node-cron");
 const rolloverModel = require("../models/rollover");
 const investmentTxModel = require("../models/investmentTx");
-const { getNextRolloverTime } = require("../utils/time");
+const { getNextRolloverTime } = require("../utils/getNextRolloverTime");
 const {
   approveDepositTransaction,
   approveWithdrawalTransaction,
