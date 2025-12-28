@@ -162,16 +162,13 @@ const getUserGrowthChart = async (req, res) => {
     const chart = await userPortfolioChart
       .find({ user: userId, ...dateFilter })
       .sort({ date: 1 })
-      .lean();
-
+      .select({ date: 1, value: 1, _id: 0 });
+        
     const latestRollover = await fetchAndUseLatestRollover()
 
     return res.json({
       success: true,
-      data: chart.map((c) => ({
-        date: c.date,
-        value: Number(c.value || 0),
-      })),
+      data: chart,
       rollover : latestRollover
     });
 

@@ -1,9 +1,11 @@
+// controllers/dailyAlertsController.js
 const botUserModel = require("../../models/botUsers");
 const userModel = require("../../models/user");
 const managerTradeModel = require("../../models/managerTrades");
 const investorTradeModel = require("../../models/investmentTrades");
 const managerModel = require("../../models/manager");
 const investmentModel = require("../../models/investment");
+
 /* ---------------- Utils ---------------- */
 
 const getTodayRange = () => {
@@ -65,32 +67,6 @@ const fetchAllUserProfitsForManager = async (managerId, userIds) => {
   return map;
 };
 
-const getWebAppUsers = async () => {
-  const users = await userModel.find(
-    { login_type: "telegram" },
-    { telegram: 1 }
-  ).lean();
-
-  return users
-    .filter(u => u.telegram?.id)
-    .map(u => ({
-      chat_id: Number(u.telegram.id),
-      userId: u._id
-    }));
-};
-
-const getNonWebAppBotUsers = async () => {
-  const users = await botUserModel.find({
-    is_opened_webapp: false,
-    is_invested: false
-  }).lean();
-
-  return users.map(u => ({
-    chat_id: Number(u.id),
-    userId: null
-  }));
-};
-
 /* ---------------- Message Builder ---------------- */
 
 const buildAlertMessage = ({
@@ -100,121 +76,96 @@ const buildAlertMessage = ({
   userProfit = 0,
   hasInvested
 }) => {
-  const profitEmoji = userProfit >= 0 ? "📈" : "📉";
-  const managerEmoji = managerProfit >= 0 ? "✅" : "⚠️";
-
   const text = `
-📊 *Daily Trading Summary*
-
-👨‍💼 *Manager:* @${manager.nickname || manager.name}
-${managerEmoji} *Manager Performance Today:* $${managerProfit.toFixed(2)}
+<blockquote><b>Manager:</b> ${manager.nickname || manager.name}
+<b>Today’s Performance:</b> $${managerProfit.toFixed(2)}
+<b>Your Portfolio:</b> ${userProfit > 0 ? "+" : ""}$${userProfit.toFixed(2)}</blockquote>
 
 ${
   hasInvested
-    ? `
-📈 *Your Portfolio Update*
-${userProfit>0 ? `*Profit :* +$${userProfit.toFixed(2)}` : `*Loss : * $${userProfit.toFixed(2)}`}
-
-${
-  userProfit > 0
-    ? "Your capital moved in the right direction today. Consistency and discipline drive long-term results."
-    : userProfit < 0
-    ? "A controlled drawdown occurred today. Risk management remained within defined limits."
-    : "Market conditions did not trigger trades for your account today."
-}
-                                                                                                                                       
-🔒 Disciplined risk • Long-term focus
-`
+    ? userProfit > 0
+      ? "<b>Positive progress today.</b>"
+      : userProfit < 0
+      ? "<b>Controlled drawdown within risk limits.</b>"
+      : "<b>No trades executed today.</b>"
     : `
-💡 *You are not invested yet.*
-
-Today’s trades were executed using professional strategies and structured risk management.
-
-📌 *Why investors choose this system:*
-• No manual trading  
-• No market experience required  
-• You participate only when real trades occur  
-
-Start copying this manager and let your capital work with discipline.
+<b>The best part?</b>
+Our followers earned this while sleeping, working, or spending time with family.
 `
 }
+Check the full breakdown here ⬇️
 `.trim();
 
   return {
     chat_id,
-    text,
-    parse_mode: "Markdown",
-    reply_markup: {
-      inline_keyboard: [
-        [
-          {
-            text: hasInvested ? "View Portfolio" : "Start Investing",
-            web_app: {
-              url: process.env.WEBAPP_URL
+    payload: {
+      text,
+      parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: hasInvested ? "📊 View Portfolio" : "Start Investing",
+              web_app: { url: process.env.WEBAPP_URL }
             }
-          }
+          ]
         ]
-      ]
+      }
     }
   };
 };
 
-
-/* ---------------- CONTROLLER ---------------- */
+/* ---------------- CONTROLLER WITH PAGINATION ---------------- */
 
 const getDailyProfitAlerts = async (req, res) => {
   try {
+    const offset = Number(req.query.offset || 0);
+    const limit = Math.min(Number(req.query.limit || 500), 1000);
+    
     const alerts = [];
 
     const managers = await managerModel.find().lean();
     if (!managers.length) {
-      return res.json({ success: true, alerts });
+      return res.json({ success: true, alerts: [] });
     }
 
-    const webAppUsers = await getWebAppUsers();
-    const nonWebAppUsers = await getNonWebAppBotUsers();
+    const webAppUsers = await userModel
+      .find({ login_type: "telegram" }, { telegram: 1 })
+      .lean();
+
+    const nonWebAppUsers = await botUserModel
+      .find({ is_opened_webapp: false, is_invested: false })
+      .lean();
+
+    const allUsers = [
+      ...webAppUsers.map(u => ({ chat_id: Number(u.telegram.id), userId: u._id })),
+      ...nonWebAppUsers.map(u => ({ chat_id: Number(u.id), userId: null }))
+    ];
+
+    const pageUsers = allUsers.slice(offset, offset + limit);
 
     for (const manager of managers) {
       const managerProfit = await fetchManagerProfitToday(manager._id);
-      if (managerProfit <= 0) continue;
+      // if (managerProfit <= 0) continue;
 
-      const webAppUserIds = webAppUsers.map(u => u.userId);
-
-      const profitMap = await fetchAllUserProfitsForManager(
-        manager._id,
-        webAppUserIds
-      );
+      const webUserIds = pageUsers.filter(u => u.userId).map(u => u.userId);
+      const profitMap = await fetchAllUserProfitsForManager(manager._id, webUserIds);
 
       const investments = await investmentModel.find(
-        { user: { $in: webAppUserIds }, manager: manager._id },
+        { user: { $in: webUserIds }, manager: manager._id },
         { user: 1 }
       ).lean();
 
-      const investedUsers = new Set(
-        investments.map(i => i.user.toString())
-      );
+      const investedSet = new Set(investments.map(i => i.user.toString()));
 
-      // WebApp users
-      for (const u of webAppUsers) {
+      for (const u of pageUsers) {
         alerts.push(
           buildAlertMessage({
             chat_id: u.chat_id,
             manager,
             managerProfit,
-            userProfit: profitMap.get(u.userId.toString()) || 0,
-            hasInvested: investedUsers.has(u.userId.toString())
-          })
-        );
-      }
-
-      // Non-webapp users
-      for (const u of nonWebAppUsers) {
-        alerts.push(
-          buildAlertMessage({
-            chat_id: u.chat_id,
-            manager,
-            managerProfit,
-            hasInvested: false
+            userProfit: u.userId ? profitMap.get(u.userId.toString()) || 0 : 0,
+            hasInvested: u.userId ? investedSet.has(u.userId.toString()) : false
           })
         );
       }
@@ -222,17 +173,15 @@ const getDailyProfitAlerts = async (req, res) => {
 
     return res.json({
       success: true,
+      offset,
+      limit,
       count: alerts.length,
       alerts
     });
-
   } catch (error) {
     console.error("Daily alert controller error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to generate alerts"
-    });
+    return res.status(500).json({ success: false });
   }
 };
 
-module.exports = { getDailyProfitAlerts }
+module.exports = { getDailyProfitAlerts };
