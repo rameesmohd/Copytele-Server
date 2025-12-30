@@ -18,8 +18,6 @@ const connectDB = require('./config/mongoose.js');
     require('./cron/rolloverService.js');
     require('./cron/intervalservice.js');
 
-    require('./cron/broadcastWorker.js');
-
     console.log("✅ All cron jobs initialized");
   } catch (err) {
     console.error("❌ Error loading cron jobs:", err);

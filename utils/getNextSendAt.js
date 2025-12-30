@@ -1,22 +1,27 @@
 // helper to move sendAt forward based on scheduleType
-const getNextSendAt=(msg, now)=> {
-  const base = now || new Date();
+const getNextSendAt = (msg) => {
+  if (!msg?.sendAt) return null;
 
-  if (msg.scheduleType === "daily") {
-    return new Date(base.getTime() + 24 * 60 * 60 * 1000);
+  const base = new Date(msg.sendAt);
+
+  switch (msg.scheduleType) {
+    case "daily":
+      base.setDate(base.getDate() + 1);
+      return base;
+
+    case "weekly":
+      base.setDate(base.getDate() + 7);
+      return base;
+
+    case "every_n_days": {
+      const days = Number(msg.nDays) > 0 ? Number(msg.nDays) : 1;
+      base.setDate(base.getDate() + days);
+      return base;
+    }
+
+    default:
+      return null; // once / unknown
   }
+};
 
-  if (msg.scheduleType === "weekly") {
-    return new Date(base.getTime() + 7 * 24 * 60 * 60 * 1000);
-  }
-
-  if (msg.scheduleType === "every_n_days") {
-    const days = msg.nDays || 1;
-    return new Date(base.getTime() + days * 24 * 60 * 60 * 1000);
-  }
-
-  // "once" or unknown: no next send
-  return null;
-}
-
-module.exports= getNextSendAt
+module.exports = getNextSendAt;

@@ -1,57 +1,69 @@
 const crypto = require("crypto");
 require("dotenv").config();
 
+const canonicalPayload = (data = {}) => {
+  return Object.keys(data)
+    .sort()
+    .reduce((acc, key) => {
+      const value = data[key];
+
+      if (value === undefined) return acc;
+
+      acc[key] =
+        value === null ? "null" : String(value);
+
+      return acc;
+    }, {});
+};
+
 const botAuth = (req, res, next) => {
   try {
-    const requestIp = req.ip?.replace("::ffff:", "") || "unknown";
     const signature = req.headers["x-signature"];
-
     if (!signature) {
-      console.log("Missing signature header" )
-      return res.status(401).json({ success: false, message: "Missing signature header" });
+      return res.status(401).json({
+        success: false,
+        message: "Missing signature header",
+      });
     }
 
-    // Get payload depending on request type
-    const payload = req.method === "GET" ? (req.query || {}) : (req.body || {});
+    const payload =
+      req.method === "GET"
+        ? (req.query || {})
+        : (req.body || {});
 
-    // Validate payload type
     if (typeof payload !== "object") {
-      return res.status(400).json({ success: false, message: "Invalid request payload format" });
+      return res.status(400).json({
+        success: false,
+        message: "Invalid payload",
+      });
     }
 
-    // Calculate hash
+    const canonical = canonicalPayload(payload);
+
     const calculated = crypto
       .createHmac("sha256", process.env.BOT_SECRET)
-      .update(JSON.stringify(payload))
+      .update(JSON.stringify(canonical))
       .digest("hex");
 
     if (signature !== calculated) {
-      console.error("Signature mismatch:", {
+      console.error("🔐 Signature mismatch", {
         expected: calculated,
         received: signature,
+        canonical,
       });
-      return res.status(401).json({ success: false, message: "Unauthorized - Invalid signature" });
-    }
 
-    // IP whitelist enforcement only in production
-    if (process.env.NODE_ENV === "production" && process.env.BOT_SERVER_IP) {
-      if (requestIp !== process.env.BOT_SERVER_IP) {
-        console.error("IP mismatch:", {
-          expected: process.env.BOT_SERVER_IP,
-          received: requestIp,
-        });
-        return res.status(401).json({ success: false, message: "Unauthorized - IP mismatch" });
-      }
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized - Invalid signature",
+      });
     }
 
     next();
-
-  } catch (error) {
-    console.error("botAuth Middleware Error:", error);
+  } catch (err) {
+    console.error("botAuth error:", err);
     return res.status(500).json({
       success: false,
       message: "Internal authentication error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
