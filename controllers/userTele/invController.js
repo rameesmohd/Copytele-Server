@@ -180,13 +180,20 @@ const makeInvestment = async (req, res) => {
 
 const fetchInvestment=async(req,res)=>{
   try {
-    const user = req.user._id
-    const manager = req.query.manager
-    const investment = await investmentModel.findOne({user,manager})
+    const user = req.user;
+    const userId = req.user._id
+    const managerId = req.query.manager
+    const investment = await investmentModel.findOne({
+      user:userId,
+      manager:managerId
+    })
 
     return res.status(200).json({
       status : "success",
-      result: investment,
+      result: {
+        investment,
+        user
+      },
     });
   } catch (error) {
     console.error("Investment Error:", error);
