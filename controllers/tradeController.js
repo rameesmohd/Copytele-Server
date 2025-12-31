@@ -206,6 +206,7 @@ const rollOverTradeDistribution = async (rollover_id) => {
 
       // Calculate return based on equity change
       const dailyReturn = toTwoDecimals((newEquity / previousEquity - 1) * 100);
+      let compoundReturn = 0
 
       // Check if entry exists for the same day
       const existingChart = await managerGrowthChart
@@ -218,6 +219,7 @@ const rollOverTradeDistribution = async (rollover_id) => {
           (1 + existingChart.value / 100) * (1 + dailyReturn / 100) - 1;
 
         existingChart.value = toTwoDecimals(compounded * 100);
+        compoundReturn = existingChart.value;
         await existingChart.save({ session });
       } else {
         await managerGrowthChart.create(
@@ -249,6 +251,7 @@ const rollOverTradeDistribution = async (rollover_id) => {
               closed_trade_profit: tradeProfit,
               total_trade_profit: tradeProfit,
               total_funds: tradeProfit,
+              compound: compoundReturn,
             },
           },
         },
