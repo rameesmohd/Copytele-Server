@@ -232,7 +232,8 @@ const fetchAccountData = async (req, res) => {
       investment: investment._id,
       user: user_id,
       ...baseQuery,
-    })
+      status : 'completed'
+      })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limitNum + 1) // Fetch one extra to check if more exist
