@@ -66,8 +66,8 @@ router.get("/chart/monthly", chart.getMonthlyChart);
 router.get("/chart",chart.getUserGrowthChart)
 
 router.post('/kyc/otp',user.handleEmailVerificationOtp)
-router.post('/kyc/identity',upload.array("identityProof", 5),user.handleKycProofSubmit)
-router.post('/kyc/residential',upload.array("residentialProof", 5),user.handleKycProofSubmit)
+router.post('/kyc/identity',upload.array("identityProof", 2),user.handleKycProofSubmit)
+router.post('/kyc/residential',upload.array("residentialProof", 2),user.handleKycProofSubmit)
 
 router.route("/rebate")
       .get(user.fetchRebateTx)

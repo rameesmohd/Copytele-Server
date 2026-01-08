@@ -70,6 +70,11 @@ const transactionSchema = new Schema(
       default: () =>
         "TX-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
     },
+    related_transaction: {
+      type : Schema.Types.ObjectId,
+      ref : "withdrawals",
+      default : null
+    }
   },
   {
     timestamps: true, // createdAt, updatedAt
@@ -101,6 +106,11 @@ transactionSchema.index({
 transactionSchema.index({
   transaction_id: 1,
 });
+
+transactionSchema.index({
+  related_transaction: 1,
+});
+
 
 const UserTransaction = mongoose.model("user_transactions", transactionSchema);
 module.exports = UserTransaction;

@@ -430,7 +430,19 @@ const handleWithdraw = async (req, res) => {
 
         // Update withdrawal status
         await withdrawModel.updateOne({ _id:withdrawData._id }, { $set: { status } });
-        await userTransactionModel.updateOne({related_transaction : withdrawData._id},{$set: { status }})
+
+        let userTxStatus = "pending"
+        if(status==="approved"){
+          userTxStatus = "completed"
+        } else if(status==="rejected"){
+          userTxStatus = "failed"
+        }
+
+        await userTransactionModel.updateOne({ 
+          related_transaction : withdrawData._id 
+          },{$set: { userTxStatus }
+        })
+
         if(status=='rejected'){
             await userModel.updateOne({_id:withdrawData.user},
                 { $inc: { 'my_wallets.main_wallet': withdrawData.amount }}
