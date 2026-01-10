@@ -58,32 +58,26 @@ const getWeeklyChart = async (req, res) => {
 
     for (const row of rows) {
       const weekStart = dayjs(row.date).startOf("isoWeek");
-      const year = weekStart.year();
-      const weekNumber = weekStart.isoWeek();
-
-      // Create a consistent key using the week start date
       const key = weekStart.format("YYYY-MM-DD");
       const weekEnd = dayjs(row.date).endOf("isoWeek");
       const readableLabel = `${weekStart.format("MMM D")}–${weekEnd.format("D")}`;
 
       if (!weekly[key]) {
         weekly[key] = {
-          grow: 1,
+          total: 0,  // ✅ Changed from grow: 1
           label: readableLabel,
           weekStart: weekStart.toDate(),
         };
       }
 
-      // Compound the daily growth
-      weekly[key].grow *= 1 + row.value / 100;
+      weekly[key].total += row.value;  // ✅ Sum instead of compound
     }
 
-    // Sort by week start date and calculate final percentage
     const result = Object.keys(weekly)
       .sort((a, b) => new Date(a) - new Date(b))
       .map((key) => ({
         week: weekly[key].label,
-        value: Number(((weekly[key].grow - 1) * 100).toFixed(2)),
+        value: Number(weekly[key].total.toFixed(2)),  // ✅ Just return sum
       }));
 
     res.json({ manager_id, weeks, data: result });
@@ -116,18 +110,17 @@ const getMonthlyChart = async (req, res) => {
       const month = dayjs(row.date).format("YYYY-MM");
 
       if (!monthly[month]) {
-        monthly[month] = 1;
+        monthly[month] = 0;  // ✅ Changed from 1
       }
 
-      // Compound the daily growth
-      monthly[month] *= 1 + row.value / 100;
+      monthly[month] += row.value;  // ✅ Sum instead of compound
     }
 
     const result = Object.keys(monthly)
       .sort()
       .map((key) => ({
         month: key,
-        value: Number(((monthly[key] - 1) * 100).toFixed(2)),
+        value: Number(monthly[key].toFixed(2)),  // ✅ Just return sum
       }));
 
     res.json({ manager_id, months, data: result });
