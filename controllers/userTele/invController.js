@@ -341,8 +341,11 @@ const getWithdrawSummary= async(req,res)=> {
   const closedProfit = Number(investment.closed_trade_profit || investment.total_trade_profit || 0);
   const openProfit = Number(investment.open_trade_profit || 0);
   const totalProfit = toTwoDecimals(closedProfit + openProfit);
+  const projected = Number(investment.performance_fee_projected || 0);
+  const paid = Number(investment.performance_fee_paid || 0);
+  const profit = Number(totalProfit || 0);
 
-  // current interval profit (liquid profit that can be used depending on rules)
+  const netProfit = toTwoDecimals(profit - (projected + paid));  // current interval profit (liquid profit that can be used depending on rules)
   const currentIntervalProfit = toTwoDecimals(investment.current_interval_profit_equity || investment.current_interval_profit || 0);
 
   // Projected performance fee (if stored)
@@ -397,6 +400,7 @@ const getWithdrawSummary= async(req,res)=> {
     unlockedDepositsList: unlockedDepositsArr,
     totalFunds,
     totalProfit,
+    netProfit,
     currentIntervalProfit,
     performanceFeeProjected,
     lockedProfit: toTwoDecimals(lockedProfit),
