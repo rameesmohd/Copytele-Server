@@ -40,7 +40,8 @@ const onboardingMessageSchema = new mongoose.Schema(
     order : { type : Number ,default :0 },
     
     command: { type: String, default: null, unique: true, sparse: true },
-    inline : {type : Boolean , default : false}
+    inline : {type : Boolean , default : false},
+    pin: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

@@ -56,6 +56,7 @@ const scheduledMessageSchema = new mongoose.Schema(
       default: "all",
     },
     singleUserId: { type: String, default: null },
+    pin: { type: Boolean, default: false },
 
     isActive: { type: Boolean, default: false },
     isSend: { type: Boolean, default: false }, // only meaningful for 'once'
