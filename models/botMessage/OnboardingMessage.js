@@ -42,14 +42,6 @@ const onboardingMessageSchema = new mongoose.Schema(
     command: { 
       type: String, 
       default: null, 
-      unique: true, 
-      sparse: true, 
-      set: (v) => {
-        if (v === undefined) return null;
-        if (v === null) return null;
-        const s = String(v).trim();
-        return s.length ? s : null;
-      },
     },
     inline : {type : Boolean , default : false},
     pin: { type: Boolean, default: false },
@@ -59,6 +51,7 @@ const onboardingMessageSchema = new mongoose.Schema(
 
 onboardingMessageSchema.index({ isActive: 1, order: 1 });
 onboardingMessageSchema.index({ order: 1 });
+onboardingMessageSchema.index({ command: 1 });
 
 
 module.exports = mongoose.model("onboarding_messages", onboardingMessageSchema);
