@@ -74,21 +74,41 @@ const getOnboardMessages = async (req, res) => {
 
 const updateUserJoinedChannel = async (req, res) => {
   try {
-    const { id } = req.body;
+    const { id, user } = req.body;
 
     if (!id) {
-      return res.status(400).json({ success: false, message: "Missing user id" });
+      return res.status(400).json({
+        success: false,
+        message: "Missing user id",
+      });
     }
 
     await BotUser.updateOne(
       { id },
-      { $set: { is_joined_channel: true } }
+      {
+        $set: {
+          is_joined_channel: true,
+        },
+        $setOnInsert: {
+          id,
+          username: user?.username || null,
+          first_name: user?.first_name || null,
+          last_name: user?.last_name || null,
+          photo_url: user?.photo_url || null,
+          is_premium: user?.is_premium || false,
+          created_at: new Date(),
+        },
+      },
+      { upsert: true }
     );
 
     return res.status(200).json({ success: true });
   } catch (error) {
     console.error("Update joined channel error:", error);
-    res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 

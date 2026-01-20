@@ -3,7 +3,8 @@ const { Schema } = mongoose;
 
 const botUserSchema = new Schema(
   {
-    id: { type: Number, required: true},
+    is_active: { type : Boolean,default : true },
+    id: { type: Number, required: true },
     username: { type: String, default: null },
     first_name: { type: String, default: null },
     last_name: { type: String, default: null },
@@ -22,6 +23,7 @@ const botUserSchema = new Schema(
 botUserSchema.index({ id: 1 }, { unique: true });
 
 // Funnel automation
+botUserSchema.index({ is_active: 1 });
 botUserSchema.index({ is_joined_channel: 1 });
 botUserSchema.index({ is_invested: 1 });
 

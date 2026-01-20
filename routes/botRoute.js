@@ -6,17 +6,7 @@ const { getDailyProfitAlerts } = require('../controllers/bot/dailyProfitAlerts')
 const { getBroadcastMessages,getBroadcastUsers,markBroadcastDone } = require('../controllers/bot/broadcastController');
 const { getOnboardMessageByCommand } = require('../controllers/master/onboardController');
 
-
-
 router.use(botAuth)
-router.use((req, res, next) => {
-  res.on("finish", () => {
-    if (res.statusCode === 401) {
-      console.log("🚫 401 RESPONSE:", req.method, req.originalUrl);
-    }
-  });
-  next();
-});
 
 router.post('/save-user',saveUser)
 

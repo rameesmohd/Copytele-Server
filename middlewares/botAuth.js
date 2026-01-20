@@ -46,15 +46,15 @@ const botAuth = (req, res, next) => {
       .update(JSON.stringify(canonical))
       .digest("hex");
 
-    console.log("🔐 botAuth debug:", {
-        method: req.method,
-        originalUrl: req.originalUrl,
-        query: req.query,
-        params: req.params,
-        receivedSignature: signature,
-        canonical,
-        calculated,
-      });
+    // console.log("🔐 botAuth debug:", {
+    //     method: req.method,
+    //     originalUrl: req.originalUrl,
+    //     query: req.query,
+    //     params: req.params,
+    //     receivedSignature: signature,
+    //     canonical,
+    //     calculated,
+    //   });
 
     if (signature !== calculated) {
       console.error("🔐 Signature mismatch", {
