@@ -119,20 +119,7 @@ const testOnboardMessage=async(req,res)=>{
    }
 }
 
-// ✅ NEW: fetch onboarding message by command (for callback buttons)
-const getOnboardMessageByCommand = async (req, res) => {
-  try {
-    const command = (req.query.command || "").trim();
-    if (!command) return res.status(400).json({ success: false, message: "Command required" });
 
-    const msg = await OnboardingMessage.findOne({ command });
-    if (!msg) return res.status(404).json({ success: false, message: "Message not found" });
-
-    return res.status(200).json({ success: true, data: msg });
-  } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
-  }
-};
 
 module.exports = {
     createOnboardMessage,
@@ -142,6 +129,4 @@ module.exports = {
     updateOnboardMessage,
     getOnboardMessages,
     testOnboardMessage,
-
-    getOnboardMessageByCommand
 }

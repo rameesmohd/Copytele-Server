@@ -112,8 +112,34 @@ const updateUserJoinedChannel = async (req, res) => {
   }
 };
 
+const isUserExist = async(req,res)=>{
+  try {
+    const id = Number(req.params.id);
+    const user = await BotUser.findOne({ id }).select("_id").lean();
+    res.json({ exists: !!user });
+  } catch (error) {
+    res.json({ exists: false });
+  }
+}
+
+const getOnboardMessageByCommand = async (req, res) => {
+  try {
+    const command = (req.query.command || "").trim();
+    if (!command) return res.status(400).json({ success: false, message: "Command required" });
+
+    const msg = await OnboardingMessage.findOne({ command ,isActive : true }).sort({ order : 1 });
+    if (!msg) return res.status(404).json({ success: false, message: "Message not found" });
+
+    return res.status(200).json({ success: true, data: msg });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
 module.exports = { 
   saveUser,
   getOnboardMessages,
-  updateUserJoinedChannel 
+  updateUserJoinedChannel,
+  getOnboardMessageByCommand,
+  isUserExist
 };

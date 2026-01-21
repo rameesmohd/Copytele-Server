@@ -1,16 +1,16 @@
 const express = require('express')
 const router = express.Router();
 const { botAuth } = require('../middlewares/botAuth');
-const { saveUser,getOnboardMessages, updateUserJoinedChannel } = require('../controllers/bot/botController');
+const { saveUser,getOnboardMessages, updateUserJoinedChannel, isUserExist,getOnboardMessageByCommand } = require('../controllers/bot/botController');
 const { getDailyProfitAlerts } = require('../controllers/bot/dailyProfitAlerts');
 const { getBroadcastMessages,getBroadcastUsers,markBroadcastDone } = require('../controllers/bot/broadcastController');
-const { getOnboardMessageByCommand } = require('../controllers/master/onboardController');
 
 router.use(botAuth)
 
 router.post('/save-user',saveUser)
 
 router.post('/joined-channel',updateUserJoinedChannel)
+router.get('/user-exists/:id',isUserExist)
 
 router.get('/daily-profit-alerts',getDailyProfitAlerts)
 
