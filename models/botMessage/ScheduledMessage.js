@@ -9,13 +9,17 @@ const buttonSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["url", "webapp"],
+      enum: ["url", "webapp","callback"],
       default: "url"
     },
     url: {
       type: String,
       required: true
-    }
+    },
+    command: { 
+      type: String, 
+      default: null 
+    },
   },
   { _id: false }
 );
