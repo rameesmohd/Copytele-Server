@@ -33,7 +33,7 @@ const getAudienceCount = async (msg) => {
 const getAudienceUsersPaginated = async (msg, skip, limit) => {
   const query = getAudienceQuery(msg);
   
-  const users = await botUsers.find(query, { id: 1 })
+  const users = await botUsers.find({...query,is_active:true}, { id: 1 })
     .skip(Number(skip))
     .limit(Math.min(Number(limit), 500))
     .lean();

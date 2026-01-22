@@ -27,13 +27,12 @@ const botUserSchema = new Schema(
 botUserSchema.index({ id: 1 }, { unique: true });
 
 // Funnel automation
-botUserSchema.index({ is_active: 1 });
-botUserSchema.index({ is_joined_channel: 1 });
-botUserSchema.index({ is_invested: 1 });
+botUserSchema.index({ is_joined_channel: 1, is_active: 1});
+botUserSchema.index({ is_invested: 1, is_active: 1});
 
 // Referral tracking
 botUserSchema.index({ referred_by: 1 });
 
-botUserSchema.index({ is_opened_webapp: 1, is_invested: 1 });
+botUserSchema.index({ is_opened_webapp: 1, is_invested: 1 ,is_active: 1});
 
 module.exports = mongoose.model("bot_users", botUserSchema);
