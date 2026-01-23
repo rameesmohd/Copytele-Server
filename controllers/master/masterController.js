@@ -12,29 +12,65 @@ const { buildPaginatedQuery } = require('../../controllers/common/buildPaginatio
 const { sendEmailToUser } = require('../../assets/html/verification')
 const bcrypt = require("bcrypt");
 
-const fetchUser =async(req,res)=>{
-    try {
-        const { query, skip, limit } = buildPaginatedQuery(req.query, ['email user_id']);
-    
-        // Total count for pagination
-        const total = await userModel.countDocuments(query);
-        
-        const result =  await userModel
-        .find(query,{password : 0})
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit);
+const fetchUser = async (req, res) => {
+  try {
+    const {
+      search = "",
+      page = "1",
+      limit = "10",
+      from = "",
+      to = "",
+    } = req.query;
 
-        const latestRollover = await fetchAndUseLatestRollover()
-        return res.status(200).json({
-            result :result,
-            rollover : latestRollover,total
-        })
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ errMsg: 'Error fetching users' });
+    const pageNum = Math.max(parseInt(page, 10) || 1, 1);
+    const limitNum = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 100);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Build filter
+    const filter = {};
+
+    // Date range filter (createdAt)
+    if (from || to) {
+      filter.createdAt = {};
+      if (from) filter.createdAt.$gte = new Date(from);
+      if (to) filter.createdAt.$lte = new Date(to);
     }
-}
+
+    // Search filter (email / user_id)
+    const s = String(search).trim();
+    if (s) {
+      const isNumber = /^[0-9]+$/.test(s);
+      filter.$or = [
+        { email: { $regex: s, $options: "i" } },
+        ...(isNumber ? [{ user_id: Number(s) }] : []),
+      ];
+    }
+
+    const total = await userModel.countDocuments(filter);
+
+    const result = await userModel
+      .find(filter, { password: 0 })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum)
+      .lean();
+
+    const latestRollover = await fetchAndUseLatestRollover();
+
+    return res.status(200).json({
+      success: true,
+      result,
+      total,
+      rollover: latestRollover,
+      page: pageNum,
+      limit: limitNum,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ success: false, errMsg: "Error fetching users" });
+  }
+};
+
 
 const fetchBotUsers=async(req,res)=>{
   try {
