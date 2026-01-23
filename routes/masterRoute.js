@@ -15,7 +15,9 @@ const {
         addToWallet,
         changeUserEmail,
         sendEmail,
-        masterLogout
+        masterLogout,
+        fetchBotUsers,
+        fetchBotUsersStats
     } =require('../controllers/master/masterController')
 const { fetchAddressBalance } = require('../controllers/userTele/paymentController')
 const {verifyToken} = require('../middlewares/masterAuth')
@@ -49,6 +51,9 @@ router.use(verifyToken)
 
 router.route('/users')
     .get(fetchUser)
+
+router.get('/bot-users',fetchBotUsers)
+router.get('/bot-users/stats',fetchBotUsersStats)
 
 router.route('/manager')
     .get(fetchManagers)

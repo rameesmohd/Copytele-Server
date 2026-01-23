@@ -3,6 +3,7 @@ const managerModel = require('../../models/manager')
 const depositModel = require('../../models/deposit')
 const ticketModel = require('../../models/tickets')
 const withdrawModel = require('../../models/withdraw')
+const BotUser = require('../../models/botUsers');
 const jwt = require("jsonwebtoken");
 const userTransactionModel = require('../../models/userTx');
 const { default: mongoose } = require('mongoose');
@@ -33,6 +34,81 @@ const fetchUser =async(req,res)=>{
         console.log(error);
         res.status(500).json({ errMsg: 'Error fetching users' });
     }
+}
+
+const fetchBotUsers=async(req,res)=>{
+  try {
+    const page = Math.max(parseInt(req.query.page || "1", 10), 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit || "20", 10), 1), 200);
+    const skip = (page - 1) * limit;
+
+    const search = (req.query.search || "").trim();
+    const active = req.query.active || "all";
+    const secondBot = req.query.secondBot || "all";
+
+    const sortField = req.query.sortField || "createdAt";
+    const sortOrder = req.query.sortOrder === "ascend" ? 1 : -1;
+
+    const filter = {};
+    if (active !== "all") filter.is_active = active === "true";
+    if (secondBot !== "all") filter.is_second_bot = secondBot === "true";
+
+    if (search) {
+      const asNumber = Number(search);
+      const or = [
+        { username: { $regex: search, $options: "i" } },
+        { first_name: { $regex: search, $options: "i" } },
+        { last_name: { $regex: search, $options: "i" } },
+      ];
+      if (!Number.isNaN(asNumber)) or.push({ id: asNumber });
+      filter.$or = or;
+    }
+
+    const [items, total] = await Promise.all([
+      BotUser.find(filter)
+        .sort({ [sortField]: sortOrder })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      BotUser.countDocuments(filter),
+    ]);
+
+    res.json({
+      success: true,
+      items,
+      total,
+      page,
+      limit,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ errMsg: 'Error fetching bot users' });
+  }
+}
+
+const fetchBotUsersStats=async(req,res)=>{
+  try {
+     const [s] = await BotUser.aggregate([
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+          active: { $sum: { $cond: ["$is_active", 1, 0] } },
+          inactive: { $sum: { $cond: [{ $not: ["$is_active"] }, 1, 0] } },
+          joined: { $sum: { $cond: ["$is_joined_channel", 1, 0] } },
+          opened: { $sum: { $cond: ["$is_opened_webapp", 1, 0] } },
+          invested: { $sum: { $cond: ["$is_invested", 1, 0] } },
+          second : { $sum: { $cond: ["$is_second_bot", 1, 0] } },
+        },
+      },
+      { $project: { _id: 0 } },
+    ]);
+
+    res.json({ success: true, stats: s || {} });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ errMsg: 'Error fetching bot users' });
+  }
 }
 
 const addManager = async (req, res) => {
@@ -613,6 +689,9 @@ module.exports = {
 
     fetchHelpRequests,
     changeHelpRequestStatus,
+
+    fetchBotUsers,
+    fetchBotUsersStats,
 
     masterLogout
 }
