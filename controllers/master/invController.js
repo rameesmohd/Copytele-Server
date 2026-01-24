@@ -44,12 +44,26 @@ const approveDepositTransaction = async (transactionId, rollover_id) => {
 
         // Prepare deposit entry with truncation
         const depositAmount = toTwoDecimals(transaction.amount || 0);
-        const depositObj = {
-          amount: depositAmount,
-          lock_duration: investment.trading_liquidity_period,
-          deposited_at: new Date(),
-          unlocked_at: undefined, // your DepositSchema default will compute unlocked_at
-        };
+        let depositObj = {};
+
+        if(transaction.kind=="bonus"){
+           depositObj = {
+            amount: depositAmount,
+            lock_duration: null,
+            deposited_at: new Date(),
+            kind: "bonus",
+            unlocked_at: undefined, // your DepositSchema default will compute unlocked_at
+          };
+        } else{
+          // Prepare deposit entry with truncation
+          depositObj = {
+            amount: depositAmount,
+            lock_duration: investment.trading_liquidity_period,
+            deposited_at: new Date(),
+            kind : "cash",
+            unlocked_at: undefined, // your DepositSchema default will compute unlocked_at
+          };
+        }
 
         // Update investment: add deposit and increment totals (use total_equity & total_deposit)
         await investmentModel.findByIdAndUpdate(

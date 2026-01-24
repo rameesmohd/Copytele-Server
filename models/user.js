@@ -98,7 +98,14 @@ const userSchema = new mongoose.Schema(
     ]
   },
 
-  currToken : String
+  currToken : String,
+  bonus_added : [
+    { 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: "bonus", 
+      default: []
+    }
+  ]
 }, { timestamps: true });
 
 // Telegram login

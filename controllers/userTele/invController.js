@@ -5,6 +5,7 @@ const { default: mongoose } = require('mongoose');
 const InvestmentTransaction = require('../../models/investmentTx');
 const UserTransaction = require('../../models/userTx');
 const BotUserModel = require('../../models/botUsers')
+const BonusModel = require('../../models/bonus');
 
 const makeInvestment = async (req, res) => {
   const session = await mongoose.startSession();
@@ -52,13 +53,13 @@ const makeInvestment = async (req, res) => {
       //Check already existed
       let investment = await investmentModel.findOne({user :user._id ,manager : manager._id })
       
+      if (user?.login_type === "telegram") {
+        await BotUserModel.findOneAndUpdate(
+          { id: user.telegram?.id },
+          { $set: { is_invested: true } },
+          { session, new: true }
+      );}
       if(!investment){
-          if (user?.login_type === "telegram") {
-            await BotUserModel.findOneAndUpdate(
-              { id: user.telegram?.id },
-              { $set: { is_invested: true } },
-              { session, new: true }
-          );}
 
           // Find inviter
           let inviter = null;
@@ -145,6 +146,7 @@ const makeInvestment = async (req, res) => {
             investment: investment._id,
             type: "deposit",
             status: "pending",
+            kind: "cash",   
             amount,
             from: fromWallet,
             to: toInvestment,
@@ -158,6 +160,152 @@ const makeInvestment = async (req, res) => {
       await ManagerModel.findByIdAndUpdate(
         managerId,
         { $inc: { total_investors: 1 } },
+        { session }
+      );
+
+      return res.status(201).json({
+        status : "success",
+        msg: "Investment created successfully",
+        investmentId: investment._id,
+        result: investment,
+      });
+    });
+  } catch (error) {
+    console.error("Investment Error:", error);
+    return res.status(500).json({
+      errMsg: error.message || "Server error",
+    });
+  } finally {
+    session.endSession();
+  }
+};
+
+const makeBonusInvestment = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      const { managerId, ref ,bonus } = req.body;
+      const parsed = Number(bonus.amount);
+      const amount = Math.floor(parsed * 100) / 100;
+      const userId = req.user._id;
+
+      if (!userId || !managerId || !amount || !bonus || amount <= 0) {
+        throw new Error("Invalid input data");
+      }
+      
+      const isExist = await BonusModel.findOne({ _id: bonus._id, status: "active", type: "claim" })
+      if (!isExist) {
+        return res.status(400).json({ errMsg: "Bonus not found" });
+      }
+
+      // Fetch user & manager
+      const [user, manager] = await Promise.all([
+        UserModel.findById(userId).session(session),
+        ManagerModel.findById(managerId).session(session),
+      ]);
+
+      if (!user || !manager) throw new Error("User or manager not found");
+
+      // Generate investment ID
+      const invCount = await investmentModel.countDocuments().session(session);
+
+      //Check already existed
+      let investment = await investmentModel.findOne({user :user._id ,manager : manager._id })
+      
+      await UserModel.findOneAndUpdate(
+        { _id: user._id },
+        { $addToSet: { bonus_added: bonus._id } },
+        { session, new: true }
+      );
+      
+      if(!investment){
+          // Find inviter
+          let inviter = null;
+          if (ref) {
+            inviter = await UserModel.findOne({ user_id: ref }).session(session);
+          } else if (user.referral?.referred_by) {
+            inviter = await UserModel.findById(user.referral.referred_by).session(session);
+          }
+          // Create Investment Entry
+          const [newInvestment] = await investmentModel.create(
+            [
+              {
+                inv_id: 21234 + invCount,
+                user: user._id,
+                manager: manager._id,
+                manager_nickname: manager.nickname,
+
+                // Manager settings
+                trading_interval: manager.trading_interval,
+                trading_liquidity_period: manager.trading_liquidity_period,
+                min_initial_investment: manager.min_initial_investment,
+                min_top_up: manager.min_top_up,
+                min_withdrawal: manager.min_withdrawal,
+                manager_performance_fee: manager.performance_fees_percentage,
+                
+                // Dashboard totals (start empty)
+                total_funds: 0,
+                total_deposit: 0,
+                deposits: [],
+
+                // Referral
+                referred_by: inviter ? inviter._id : null,
+              },
+            ],
+            { session }
+          );
+
+          investment = newInvestment
+
+          // Referral tracking
+          if (inviter && inviter._id.toString() !== user._id.toString()) {
+            await UserModel.findByIdAndUpdate(
+              inviter._id,
+              {
+                $push: {
+                  "referral.investments": {
+                    investment_id: investment._id,
+                    rebate_received: 0,
+                  },
+                },
+              },
+              { session }
+            );
+          }
+      }
+      
+      const fromWallet = `BONUS`;
+      const toInvestment = `INV_${investment.inv_id}`;
+
+      // INVESTMENT TRANSACTION (Deposit to manager)
+      await InvestmentTransaction.create(
+        [
+          {
+            user: user._id,
+            manager: manager._id,
+            investment: investment._id,
+            type: "deposit",
+            status: "pending",
+            kind: "bonus",
+            amount,
+            from: fromWallet,
+            to: toInvestment,
+            description: `System Bonus`,
+          },
+        ],
+        { session }
+      );
+
+      // Increase manager investor count
+      ManagerModel.findByIdAndUpdate(
+        managerId,
+        { $inc: { total_investors: 1 } },
+        { session }
+      );
+
+      BonusModel.findByIdAndUpdate(
+        bonus._id,
+        { $inc: { used_count: 1 } },
         { session }
       );
 
@@ -675,5 +823,6 @@ module.exports={
 //============Withdrawal from Investment=================
     getWithdrawSummary,
     handleInvestmentWithdrawal,
-    // approveWithdrawalTransaction
+    // approveWithdrawalTransaction,
+    makeBonusInvestment
 }

@@ -41,6 +41,14 @@ const {
     getOnboardMessageByCommand
 } = require('../controllers/master/onboardController')
 
+const {
+  createBonus,
+  updateBonus,
+  deleteBonus,
+  getBonusById,
+  listBonuses,
+} = require("../controllers/master/bonusController");
+
 router.post('/login',masterLogin)
 
 router.use(verifyToken)
@@ -92,6 +100,12 @@ router.patch("/onboard/update/:id", updateOnboardMessage)
 router.patch("/onboard/delete/:id", deleteOnboardMessage)
 router.patch("/onboard/reorder", reorderOnboardMessage)
 router.post("/onboard/test/:id", testOnboardMessage)
+
+router.get("/bonus", listBonuses);
+router.get("/bonus/:id", getBonusById);
+router.post("/bonus", createBonus);
+router.patch("/bonus/:id", updateBonus);
+router.delete("/bonus/:id", deleteBonus);
 
 router.get('/logout',masterLogout)
 

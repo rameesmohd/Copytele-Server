@@ -15,7 +15,7 @@ const botUserSchema = new Schema(
     inactive_reason: { type: String, default: null },
     inactive_at: { type: Date, default: null },
     
-    is_second_bot : {type : Boolean,default : true },
+    is_second_bot : {type : Boolean,default : false },
     // -------- Funnel & automation flags --------
     is_opened_webapp: { type: Boolean, default: false },
     is_invested: { type: Boolean, default: false },

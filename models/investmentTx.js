@@ -45,6 +45,11 @@ const investmentTransactionSchema = new Schema(
       enum: ["pending", "success", "failed","approved"],
       default: "pending",
     },
+    kind: {
+      type: String,
+      enum: ["cash", "bonus"], 
+      default: "cash",
+    },
 
     amount: {
       type: Number,

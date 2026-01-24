@@ -3,6 +3,10 @@ const { Schema } = mongoose;
 
 // Helper function to calculate the unlocked date considering only trading days (weekdays)
 function calculateUnlockedDate(startDate, lockDuration) {
+    // Unlimited lock
+    if (lockDuration === null || lockDuration === -1) {
+      return null;
+    }
     let unlockedDate = new Date(startDate);
     let daysAdded = 0;
   
@@ -22,6 +26,7 @@ function calculateUnlockedDate(startDate, lockDuration) {
 const DepositSchema = new Schema({
   amount: { type: Number, required: true },
   deposited_at: { type: Date, default: Date.now }, // When the deposit was made
+  kind: { type: String, enum: ["cash", "bonus"], default: "cash" }, 
   lock_duration: { type: Number, required: true }, // Lock period in days
   unlocked_at: {
     type: Date,
