@@ -625,7 +625,7 @@ const handleInvestmentWithdrawal = async (req, res) => {
       return res.status(400).json({ success : false, errMsg: "Invalid withdrawal amount." });
 
     if (amount < 10)
-      return res.status(400).json({ success : false, errMsg: "Min withdrawal is 10USD." });
+      return res.status(400).json({ success : false, errMsg: "Min withdrawal is $10." });
 
     const investment = await investmentModel.findById(investmentId);
     if (!investment)
@@ -636,6 +636,12 @@ const handleInvestmentWithdrawal = async (req, res) => {
     if (!user)
       return res.status(400).json({ errMsg: "User not found." });
 
+    if(user?.login_type === "telegram"){
+      const botUser = await BotUserModel.findOne({ id: user.telegram?.id });
+      if(!botUser.is_invested){
+        errMsg: "Bonus profits can only be withdrawn after a minimum actual investment."
+      }
+    }
     /** -----------------------------------------
      * Calculate liquidity-locked deposits
      * ----------------------------------------- */
