@@ -220,59 +220,66 @@ const makeBonusInvestment = async (req, res) => {
       );
       
       if(!investment){
-          // Find inviter
-          let inviter = null;
-          if (ref) {
-            inviter = await UserModel.findOne({ user_id: ref }).session(session);
-          } else if (user.referral?.referred_by) {
-            inviter = await UserModel.findById(user.referral.referred_by).session(session);
-          }
-          // Create Investment Entry
-          const [newInvestment] = await investmentModel.create(
-            [
-              {
-                inv_id: 21234 + invCount,
-                user: user._id,
-                manager: manager._id,
-                manager_nickname: manager.nickname,
-
-                // Manager settings
-                trading_interval: manager.trading_interval,
-                trading_liquidity_period: manager.trading_liquidity_period,
-                min_initial_investment: manager.min_initial_investment,
-                min_top_up: manager.min_top_up,
-                min_withdrawal: manager.min_withdrawal,
-                manager_performance_fee: manager.performance_fees_percentage,
-                
-                // Dashboard totals (start empty)
-                total_funds: 0,
-                total_deposit: 0,
-                deposits: [],
-
-                // Referral
-                referred_by: inviter ? inviter._id : null,
-              },
-            ],
-            { session }
+        if(user?.login_type === "telegram"){
+          await BotUserModel.findOneAndUpdate(
+            { id: user.telegram?.id },
+            { $set: { is_claimed_bonus: true } },
+            { session, new: true }
           );
+      }
+      // Find inviter
+        let inviter = null;
+        if (ref) {
+          inviter = await UserModel.findOne({ user_id: ref }).session(session);
+        } else if (user.referral?.referred_by) {
+          inviter = await UserModel.findById(user.referral.referred_by).session(session);
+        }
+        // Create Investment Entry
+        const [newInvestment] = await investmentModel.create(
+          [
+            {
+              inv_id: 21234 + invCount,
+              user: user._id,
+              manager: manager._id,
+              manager_nickname: manager.nickname,
 
-          investment = newInvestment
+              // Manager settings
+              trading_interval: manager.trading_interval,
+              trading_liquidity_period: manager.trading_liquidity_period,
+              min_initial_investment: manager.min_initial_investment,
+              min_top_up: manager.min_top_up,
+              min_withdrawal: manager.min_withdrawal,
+              manager_performance_fee: manager.performance_fees_percentage,
+              
+              // Dashboard totals (start empty)
+              total_funds: 0,
+              total_deposit: 0,
+              deposits: [],
 
-          // Referral tracking
-          if (inviter && inviter._id.toString() !== user._id.toString()) {
-            await UserModel.findByIdAndUpdate(
-              inviter._id,
-              {
-                $push: {
-                  "referral.investments": {
-                    investment_id: investment._id,
-                    rebate_received: 0,
-                  },
+              // Referral
+              referred_by: inviter ? inviter._id : null,
+            },
+          ],
+          { session }
+        );
+
+        investment = newInvestment
+
+        // Referral tracking
+        if (inviter && inviter._id.toString() !== user._id.toString()) {
+          await UserModel.findByIdAndUpdate(
+            inviter._id,
+            {
+              $push: {
+                "referral.investments": {
+                  investment_id: investment._id,
+                  rebate_received: 0,
                 },
               },
-              { session }
-            );
-          }
+            },
+            { session }
+          );
+        }
       }
       
       const fromWallet = `BONUS`;

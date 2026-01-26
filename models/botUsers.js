@@ -20,23 +20,18 @@ const botUserSchema = new Schema(
     is_opened_webapp: { type: Boolean, default: false },
     is_invested: { type: Boolean, default: false },
     is_joined_channel: { type: Boolean, default: false },
+    is_claimed_bonus: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
 
-// Telegram user lookup
 botUserSchema.index({ id: 1 }, { unique: true });
 
-botUserSchema.index({ is_active: 1 });
-botUserSchema.index({ is_second_bot: 1 });
+botUserSchema.index({ is_active: 1, is_opened_webapp: 1 });
+botUserSchema.index({ is_active: 1, is_invested: 1 });
+botUserSchema.index({ is_active: 1, is_joined_channel: 1 });
+botUserSchema.index({ is_active: 1, is_invested: 1, is_claimed_bonus: 1 });
 
-// Funnel automation
-botUserSchema.index({ is_joined_channel: 1, is_active: 1});
-botUserSchema.index({ is_invested: 1, is_active: 1});
-
-// Referral tracking
 botUserSchema.index({ referred_by: 1 });
-
-botUserSchema.index({ is_opened_webapp: 1, is_invested: 1 ,is_active: 1});
 
 module.exports = mongoose.model("bot_users", botUserSchema);

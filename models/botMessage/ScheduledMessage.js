@@ -53,9 +53,11 @@ const scheduledMessageSchema = new mongoose.Schema(
         "all",
         "single",
         "not_opened_webapp",
-        "not_invested",
         "not_joined_channel",
+        "not_invested",
         "invested",
+        "not_claimed_bonus",
+        "claimed_bonus"
       ],
       default: "all",
     },
