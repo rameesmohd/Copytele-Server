@@ -81,18 +81,10 @@ const buildAlertMessage = ({
 <b>Today’s Performance:</b> $${managerProfit.toFixed(2)}
 <b>Your Portfolio:</b> ${userProfit > 0 ? "+" : ""}$${userProfit.toFixed(2)}</blockquote>
 
-${
-  hasInvested
-    ? userProfit > 0
-      ? "<b>Positive progress today.</b>"
-      : userProfit < 0
-      ? "<b>Controlled drawdown within risk limits.</b>"
-      : "<b>No trades executed today.</b>"
-    : `
-<b>The best part?</b>
+${hasInvested ? userProfit > 0 ? "<b>Positive progress today.</b>" : userProfit < 0 ? "<b>Controlled drawdown within risk limits.</b>":"<b>No trades executed today.</b>": 
+`<b>The best part?</b>
 Our followers earned this while sleeping, working, or spending time with family.
-`
-}
+`}
 Check the full breakdown here ⬇️
 `.trim();
 
