@@ -10,7 +10,7 @@ const getBroadcastMessages = async (req, res) => {
     const messages = await ScheduledMessage.find({
       isActive: true,
       $or: [
-        { scheduleType: "once", isSend: false, sendAt: { $lte: now } },
+        { scheduleType: "once", sendAt: { $lte: now } },
         { scheduleType: "daily", sendAt: { $lte: now } },
         { scheduleType: "weekly", sendAt: { $lte: now } },
         { scheduleType: "every_n_days", sendAt: { $lte: now } },
