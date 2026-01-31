@@ -17,7 +17,7 @@ const isUserInChannel = async (userId) => {
       console.log("Rate limit hit, retry later:", err.response.data);
     } else {
       console.log("API Error:", err?.message);
-      console.log("User err status =>`,", e?.response?.data?.description || e?.message);
+      console.log("User err status =>`,", err?.response?.data?.description || err?.message);
     }
     return false; 
   }
